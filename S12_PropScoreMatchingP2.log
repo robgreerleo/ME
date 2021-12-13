@@ -1,0 +1,994 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 12/leonard_exc12.log
+  log type:  text
+ opened on:  24 Jan 2018, 21:51:16
+
+. 
+. ********************************************************
+. * Q.1 Open and inspect the dataset
+. 
+. use "$datadir\hornung-rail-cross-section_new.dta", clear
+
+. 
+. global control street1848_dummy ship1849_dummy ln_pop1849civil ///
+> ln_pop1849military fac1849_total2_pc county_mining county_landownership ///
+> pop1849_young_pc edu1849_pri_enrol dist1
+
+. 
+. global exantecontrols ln_pop1837civil gr_1821_1837 occ1819_merch_pc ///
+>  loom1819_city_pc pop1816_prot_pc buil1821_home_city_pc buil1821_fac_city_pc ///
+>  ln_assu1821_value_city_ph
+
+. 
+. ********************************************************
+. * Q.2 Logit and Linear Probability Model
+. 
+. reg rail1848 $exantecontrols 
+
+      Source |       SS           df       MS      Number of obs   =       847
+-------------+----------------------------------   F(8, 838)       =     19.79
+       Model |  12.2798011         8  1.53497514   Prob > F        =    0.0000
+    Residual |  64.9882036       838  .077551556   R-squared       =    0.1589
+-------------+----------------------------------   Adj R-squared   =    0.1509
+       Total |  77.2680047       846  .091333339   Root MSE        =    .27848
+
+-------------------------------------------------------------------------------------------
+                 rail1848 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------------------+----------------------------------------------------------------
+          ln_pop1837civil |   .1354284   .0146326     9.26   0.000     .1067076    .1641491
+             gr_1821_1837 |   2.250765   1.080044     2.08   0.037     .1308554    4.370674
+         occ1819_merch_pc |   .8855072   .9622479     0.92   0.358    -1.003192    2.774206
+         loom1819_city_pc |  -.3632843   .4147162    -0.88   0.381    -1.177289    .4507201
+          pop1816_prot_pc |    .030863    .026331     1.17   0.241    -.0208194    .0825455
+    buil1821_home_city_pc |  -.1587667   .3102424    -0.51   0.609    -.7677101    .4501767
+     buil1821_fac_city_pc |  -.4569286    1.53352    -0.30   0.766    -3.466921    2.553064
+ln_assu1821_value_city_ph |   .0125759   .0163691     0.77   0.443    -.0195534    .0447051
+                    _cons |  -1.048725   .1290291    -8.13   0.000    -1.301983   -.7954665
+-------------------------------------------------------------------------------------------
+
+. margins, dydx(gr_1821_1837) atmeans
+
+Conditional marginal effects                    Number of obs     =        847
+Model VCE    : OLS
+
+Expression   : Linear prediction, predict()
+dy/dx w.r.t. : gr_1821_1837
+at           : ln_pop1837~l    =    7.762792 (mean)
+               gr_1821_1837    =    .0126903 (mean)
+               occ1819_me~c    =    .0149727 (mean)
+               loom1819_c~c    =    .0189132 (mean)
+               pop1816_pr~c    =     .641013 (mean)
+               buil1821_h~c    =    .1358357 (mean)
+               buil1821_f~c    =    .0049957 (mean)
+               ln_assu182~h    =     5.41289 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   2.250765   1.080044     2.08   0.037     .1308554    4.370674
+------------------------------------------------------------------------------
+
+. * with nonlinear models, we get different marginal effect
+. logit rail1848 $exantecontrols 
+
+Iteration 0:   log likelihood = -278.19064  
+Iteration 1:   log likelihood = -229.03145  
+Iteration 2:   log likelihood = -215.68853  
+Iteration 3:   log likelihood = -215.46334  
+Iteration 4:   log likelihood = -215.46273  
+Iteration 5:   log likelihood = -215.46273  
+
+Logistic regression                             Number of obs     =        847
+                                                LR chi2(8)        =     125.46
+                                                Prob > chi2       =     0.0000
+Log likelihood = -215.46273                     Pseudo R2         =     0.2255
+
+-------------------------------------------------------------------------------------------
+                 rail1848 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+--------------------------+----------------------------------------------------------------
+          ln_pop1837civil |   1.431665   .2032342     7.04   0.000     1.033333    1.829996
+             gr_1821_1837 |   45.36527   15.42333     2.94   0.003     15.13611    75.59444
+         occ1819_merch_pc |   12.05256   14.20577     0.85   0.396    -15.79024    39.89536
+         loom1819_city_pc |  -3.588232   6.580765    -0.55   0.586    -16.48629    9.309831
+          pop1816_prot_pc |   .6508836   .3904142     1.67   0.095    -.1143142    1.416081
+    buil1821_home_city_pc |  -.5483098   4.441039    -0.12   0.902    -9.252585    8.155966
+     buil1821_fac_city_pc |  -12.31619   21.64665    -0.57   0.569    -54.74284    30.11045
+ln_assu1821_value_city_ph |    .145823   .2293503     0.64   0.525    -.3036953    .5953412
+                    _cons |  -15.67498   1.969228    -7.96   0.000    -19.53459   -11.81536
+-------------------------------------------------------------------------------------------
+
+. margins, dydx(gr_1821_1837) atmeans
+
+Conditional marginal effects                    Number of obs     =        847
+Model VCE    : OIM
+
+Expression   : Pr(rail1848), predict()
+dy/dx w.r.t. : gr_1821_1837
+at           : ln_pop1837~l    =    7.762792 (mean)
+               gr_1821_1837    =    .0126903 (mean)
+               occ1819_me~c    =    .0149727 (mean)
+               loom1819_c~c    =    .0189132 (mean)
+               pop1816_pr~c    =     .641013 (mean)
+               buil1821_h~c    =    .1358357 (mean)
+               buil1821_f~c    =    .0049957 (mean)
+               ln_assu182~h    =     5.41289 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   2.446189   .8051157     3.04   0.002     .8681913    4.024187
+------------------------------------------------------------------------------
+
+. margins, dydx(gr_1821_1837) at(ln_pop1837civil==1.2)
+
+Average marginal effects                        Number of obs     =        847
+Model VCE    : OIM
+
+Expression   : Pr(rail1848), predict()
+dy/dx w.r.t. : gr_1821_1837
+at           : ln_pop1837~l    =         1.2
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   .0002653   .0003881     0.68   0.494    -.0004954    .0010259
+------------------------------------------------------------------------------
+
+. 
+. logit rail1848 gr_1821_1837
+
+Iteration 0:   log likelihood = -311.46128  
+Iteration 1:   log likelihood = -306.93639  
+Iteration 2:   log likelihood = -306.85256  
+Iteration 3:   log likelihood = -306.85254  
+
+Logistic regression                             Number of obs     =        934
+                                                LR chi2(1)        =       9.22
+                                                Prob > chi2       =     0.0024
+Log likelihood = -306.85254                     Pseudo R2         =     0.0148
+
+------------------------------------------------------------------------------
+    rail1848 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   35.40957   11.70041     3.03   0.002      12.4772    58.34195
+       _cons |  -2.636866    .202733   -13.01   0.000    -3.034215   -2.239516
+------------------------------------------------------------------------------
+
+. margins, dydx(gr_1821_1837) atmeans
+
+Conditional marginal effects                    Number of obs     =        934
+Model VCE    : OIM
+
+Expression   : Pr(rail1848), predict()
+dy/dx w.r.t. : gr_1821_1837
+at           : gr_1821_1837    =    .0124133 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   3.186629   1.023236     3.11   0.002     1.181124    5.192135
+------------------------------------------------------------------------------
+
+. * check by hand
+. scalar beta = 35.40957 
+
+. scalar betax = beta*.0124133  - 2.636866
+
+. scalar p = exp(betax)/(1+exp(betax)) 
+
+. di beta*p*(1-p)
+3.1866272
+
+. // if you want to compute Delta(x) absolute deriv. instead of del(x) partial
+. // deriv., you should commpue the difference in probabilities between the two 
+. // values.  example: x=0.01 to x=0.015
+. scalar betax1 = beta*.01  - 2.636866
+
+. scalar p1 = exp(betax1)/(1+exp(betax1)) 
+
+. scalar betax2 = beta*.015  - 2.636866
+
+. scalar p2 = exp(betax2)/(1+exp(betax2)) 
+
+. di " first probability " p1 " second probability " p2 " and the difference " (p2-p1)
+ first probability .09256001 second probability .10854187 and the difference .01598187
+
+. 
+. // marginal at 0.01 should be close to the average from moving between 0.01 and
+. // 0.011.
+. di beta*p1*(1-p1) " this is the marginal"
+2.9741437 this is the marginal
+
+. scalar betax3 = beta*.011  - 2.636866
+
+. scalar p3 = exp(betax3)/(1+exp(betax3))
+
+. di (p3-p1)/(0.011-0.01) " this is the effect of going from 0.01 to 0.011" 
+3.0173607 this is the effect of going from 0.01 to 0.011
+
+. 
+. 
+. // HOMEWORK: Use the linear probability model and the logit model with the 
+. // full specification to answer: What is the marginal effect for a city that 
+. // grows annualy with 5% between 1821 and 1837 (i.e. gr_1821_1837 = 0.05)?
+. * for the Linear probability model
+. reg rail1848 $exantecontrols 
+
+      Source |       SS           df       MS      Number of obs   =       847
+-------------+----------------------------------   F(8, 838)       =     19.79
+       Model |  12.2798011         8  1.53497514   Prob > F        =    0.0000
+    Residual |  64.9882036       838  .077551556   R-squared       =    0.1589
+-------------+----------------------------------   Adj R-squared   =    0.1509
+       Total |  77.2680047       846  .091333339   Root MSE        =    .27848
+
+-------------------------------------------------------------------------------------------
+                 rail1848 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------------------+----------------------------------------------------------------
+          ln_pop1837civil |   .1354284   .0146326     9.26   0.000     .1067076    .1641491
+             gr_1821_1837 |   2.250765   1.080044     2.08   0.037     .1308554    4.370674
+         occ1819_merch_pc |   .8855072   .9622479     0.92   0.358    -1.003192    2.774206
+         loom1819_city_pc |  -.3632843   .4147162    -0.88   0.381    -1.177289    .4507201
+          pop1816_prot_pc |    .030863    .026331     1.17   0.241    -.0208194    .0825455
+    buil1821_home_city_pc |  -.1587667   .3102424    -0.51   0.609    -.7677101    .4501767
+     buil1821_fac_city_pc |  -.4569286    1.53352    -0.30   0.766    -3.466921    2.553064
+ln_assu1821_value_city_ph |   .0125759   .0163691     0.77   0.443    -.0195534    .0447051
+                    _cons |  -1.048725   .1290291    -8.13   0.000    -1.301983   -.7954665
+-------------------------------------------------------------------------------------------
+
+. margins, dydx(gr_1821_1837) at(gr_1821_1837==0.05)
+
+Average marginal effects                        Number of obs     =        847
+Model VCE    : OLS
+
+Expression   : Linear prediction, predict()
+dy/dx w.r.t. : gr_1821_1837
+at           : gr_1821_1837    =         .05
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   2.250765   1.080044     2.08   0.037     .1308554    4.370674
+------------------------------------------------------------------------------
+
+. * so 2.25% increased chance of having rail access
+. 
+. * for the logit model
+. logit rail1848 $exantecontrols 
+
+Iteration 0:   log likelihood = -278.19064  
+Iteration 1:   log likelihood = -229.03145  
+Iteration 2:   log likelihood = -215.68853  
+Iteration 3:   log likelihood = -215.46334  
+Iteration 4:   log likelihood = -215.46273  
+Iteration 5:   log likelihood = -215.46273  
+
+Logistic regression                             Number of obs     =        847
+                                                LR chi2(8)        =     125.46
+                                                Prob > chi2       =     0.0000
+Log likelihood = -215.46273                     Pseudo R2         =     0.2255
+
+-------------------------------------------------------------------------------------------
+                 rail1848 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+--------------------------+----------------------------------------------------------------
+          ln_pop1837civil |   1.431665   .2032342     7.04   0.000     1.033333    1.829996
+             gr_1821_1837 |   45.36527   15.42333     2.94   0.003     15.13611    75.59444
+         occ1819_merch_pc |   12.05256   14.20577     0.85   0.396    -15.79024    39.89536
+         loom1819_city_pc |  -3.588232   6.580765    -0.55   0.586    -16.48629    9.309831
+          pop1816_prot_pc |   .6508836   .3904142     1.67   0.095    -.1143142    1.416081
+    buil1821_home_city_pc |  -.5483098   4.441039    -0.12   0.902    -9.252585    8.155966
+     buil1821_fac_city_pc |  -12.31619   21.64665    -0.57   0.569    -54.74284    30.11045
+ln_assu1821_value_city_ph |    .145823   .2293503     0.64   0.525    -.3036953    .5953412
+                    _cons |  -15.67498   1.969228    -7.96   0.000    -19.53459   -11.81536
+-------------------------------------------------------------------------------------------
+
+. margins, dydx(gr_1821_1837) at(gr_1821_1837==0.05)
+
+Average marginal effects                        Number of obs     =        847
+Model VCE    : OIM
+
+Expression   : Pr(rail1848), predict()
+dy/dx w.r.t. : gr_1821_1837
+at           : gr_1821_1837    =         .05
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+gr_1821_1837 |   7.242398   3.708667     1.95   0.051    -.0264565    14.51125
+------------------------------------------------------------------------------
+
+. * so 7.24%
+. 
+. ********************************************************
+. * Q.3 Implement PSM 
+. 
+. ssc install psmatch2
+checking psmatch2 consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. 
+. // implement PSM using psmatch2
+. psmatch2 rail1848 $exantecontrols if node1848==0 & addrail71==0 & areachange1==. ///
+>  & areachange2>1871, kernel kerneltype(normal) logit common out(gr_1849_1871)
+
+Logistic regression                             Number of obs     =        628
+                                                LR chi2(8)        =      79.75
+                                                Prob > chi2       =     0.0000
+Log likelihood =  -155.7958                     Pseudo R2         =     0.2038
+
+-------------------------------------------------------------------------------------------
+                 rail1848 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+--------------------------+----------------------------------------------------------------
+          ln_pop1837civil |   1.695173   .2863615     5.92   0.000     1.133914    2.256431
+             gr_1821_1837 |   29.50556   19.73063     1.50   0.135    -9.165755    68.17688
+         occ1819_merch_pc |   10.47066   15.38985     0.68   0.496    -19.69288     40.6342
+         loom1819_city_pc |  -5.115056   7.852312    -0.65   0.515     -20.5053    10.27519
+          pop1816_prot_pc |   .7171613   .4950756     1.45   0.147    -.2531691    1.687492
+    buil1821_home_city_pc |   1.981991   5.334061     0.37   0.710    -8.472577    12.43656
+     buil1821_fac_city_pc |   -3.31926   29.44405    -0.11   0.910    -61.02853    54.39001
+ln_assu1821_value_city_ph |   .3834475   .2828245     1.36   0.175    -.1708784    .9377734
+                    _cons |  -18.94293   2.812109    -6.74   0.000    -24.45456    -13.4313
+-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+        Variable     Sample |    Treated     Controls   Difference         S.E.   T-stat
+----------------------------+-----------------------------------------------------------
+    gr_1849_1871  Unmatched | .014487659   .006481972   .008005687   .001099086     7.28
+                        ATT |  .01413546   .007282983   .006852477    .00179171     3.82
+----------------------------+-----------------------------------------------------------
+Note: S.E. does not take into account that the propensity score is estimated.
+
+ psmatch2: |   psmatch2: Common
+ Treatment |        support
+assignment | Off suppo  On suppor |     Total
+-----------+----------------------+----------
+ Untreated |         0        569 |       569 
+   Treated |         6         53 |        59 
+-----------+----------------------+----------
+     Total |         6        622 |       628 
+
+
+. 
+. * try to match the propensity score using logit (should get same table in theory)
+. logit rail1848 $exantecontrols if node1848==0 & addrail71==0 & areachange1==. ///
+>  & areachange2>1871 & gr_1849_1871!=.
+
+Iteration 0:   log likelihood = -195.67255  
+Iteration 1:   log likelihood =  -163.6735  
+Iteration 2:   log likelihood = -155.90433  
+Iteration 3:   log likelihood = -155.79603  
+Iteration 4:   log likelihood =  -155.7958  
+Iteration 5:   log likelihood =  -155.7958  
+
+Logistic regression                             Number of obs     =        628
+                                                LR chi2(8)        =      79.75
+                                                Prob > chi2       =     0.0000
+Log likelihood =  -155.7958                     Pseudo R2         =     0.2038
+
+-------------------------------------------------------------------------------------------
+                 rail1848 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+--------------------------+----------------------------------------------------------------
+          ln_pop1837civil |   1.695173   .2863615     5.92   0.000     1.133914    2.256431
+             gr_1821_1837 |   29.50556   19.73063     1.50   0.135    -9.165755    68.17688
+         occ1819_merch_pc |   10.47066   15.38985     0.68   0.496    -19.69288     40.6342
+         loom1819_city_pc |  -5.115056   7.852312    -0.65   0.515     -20.5053    10.27519
+          pop1816_prot_pc |   .7171613   .4950756     1.45   0.147    -.2531691    1.687492
+    buil1821_home_city_pc |   1.981991   5.334061     0.37   0.710    -8.472577    12.43656
+     buil1821_fac_city_pc |   -3.31926   29.44405    -0.11   0.910    -61.02853    54.39001
+ln_assu1821_value_city_ph |   .3834475   .2828245     1.36   0.175    -.1708784    .9377734
+                    _cons |  -18.94293   2.812109    -6.74   0.000    -24.45456    -13.4313
+-------------------------------------------------------------------------------------------
+
+. 
+. * how to get propensity score - use predict, it's simply the probability of 
+. * being treated. also compare from psmatch2
+. predict pscore // really should be constraining predict here
+(option pr assumed; Pr(rail1848))
+(131 missing values generated)
+
+. corr pscore _pscore
+(obs=628)
+
+             |   pscore  _pscore
+-------------+------------------
+      pscore |   1.0000
+     _pscore |   1.0000   1.0000
+
+
+. sum pscore _pscore if node1848==0 & addrail71==0 & areachange1==. ///
+>  & areachange2>1871 & gr_1849_1871!=.
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      pscore |        628     .093949    .1226269   .0009627   .9268866
+     _pscore |        628     .093949    .1226269   .0009627   .9268866
+
+. 
+.  // check the distribution of the PScore and the common support
+. psgraph, bin(100)
+
+.  
+. ********************************************************
+. * Q.4 Treatment effects of the PSM
+. 
+. // we can simply generate weighted averages
+. mean gr_1849_1871 $exantecontrols [pweight=_weight] if node1848==0, over(rail1848) 
+
+Mean estimation                   Number of obs   =        622
+
+            0: rail1848 = 0
+            1: rail1848 = 1
+
+---------------------------------------------------------------------------
+                     Over |       Mean   Std. Err.     [95% Conf. Interval]
+--------------------------+------------------------------------------------
+gr_1849_1871              |
+                        0 |    .007283   .0007693      .0057722    .0087938
+                        1 |   .0141355   .0016981      .0108007    .0174702
+--------------------------+------------------------------------------------
+ln_pop1837civil           |
+                        0 |   7.944827   .0532106      7.840332    8.049321
+                        1 |   8.085963   .0899794      7.909262    8.262664
+--------------------------+------------------------------------------------
+gr_1821_1837              |
+                        0 |   .0143728   .0006692      .0130586     .015687
+                        1 |   .0149863   .0008604      .0132967    .0166759
+--------------------------+------------------------------------------------
+occ1819_merch_pc          |
+                        0 |    .015354   .0007162      .0139476    .0167604
+                        1 |   .0155196   .0013046      .0129576    .0180815
+--------------------------+------------------------------------------------
+loom1819_city_pc          |
+                        0 |   .0182733   .0010443      .0162226    .0203241
+                        1 |   .0172252   .0026556      .0120101    .0224402
+--------------------------+------------------------------------------------
+pop1816_prot_pc           |
+                        0 |   .7441507   .0191982      .7064493     .781852
+                        1 |   .7803938   .0465635      .6889527    .8718348
+--------------------------+------------------------------------------------
+buil1821_home_city_pc     |
+                        0 |   .1338938    .002554      .1288783    .1389093
+                        1 |   .1316883   .0036424      .1245353    .1388412
+--------------------------+------------------------------------------------
+buil1821_fac_city_pc      |
+                        0 |   .0043378   .0003964      .0035592    .0051163
+                        1 |   .0039742   .0005253      .0029426    .0050059
+--------------------------+------------------------------------------------
+ln_assu1821_value_city_ph |
+                        0 |   5.583696   .0591826      5.467474    5.699918
+                        1 |   5.658931   .0798051      5.502211    5.815652
+---------------------------------------------------------------------------
+
+. 
+. * since it's weighted, we cant simply use the t-test
+. reg gr_1849_1871 rail1848 [pweight=_weight]
+(sum of wgt is 106)
+
+Linear regression                               Number of obs     =        622
+                                                F(1, 620)         =      13.49
+                                                Prob > F          =     0.0003
+                                                R-squared         =     0.0941
+                                                Root MSE          =     .01065
+
+------------------------------------------------------------------------------
+             |               Robust
+gr_1849_1871 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    rail1848 |   .0068525   .0018658     3.67   0.000     .0031885    .0105165
+       _cons |    .007283   .0007699     9.46   0.000      .005771     .008795
+------------------------------------------------------------------------------
+
+. 
+. reg gr_1831_1837 rail1848 [pweight=_weight]
+(sum of wgt is 105.915307763)
+
+Linear regression                               Number of obs     =        621
+                                                F(1, 619)         =       0.62
+                                                Prob > F          =     0.4331
+                                                R-squared         =     0.0042
+                                                Root MSE          =     .01385
+
+------------------------------------------------------------------------------
+             |               Robust
+gr_1831_1837 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    rail1848 |   .0018025   .0022981     0.78   0.433    -.0027104    .0063154
+       _cons |   .0151073   .0012375    12.21   0.000     .0126771    .0175375
+------------------------------------------------------------------------------
+
+. // note: matching is always base on observables!  Therefore, unobserved
+. // heterogeneity cannot be taken into account.  
+.  
+. ********************************************************
+. * Q.5 PSM and IV: Table 8 Panel B, columns (1) and (2)
+. 
+. ivreg2 gr_1831_1837 (rail1848=slc1848) gr_1816_1831 $control if node1848==0 ///
+>  & areachange1==. [pweight=_weight], cluster(kreiskey1849) 
+(sum of wgt is     1.0559e+02)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on kreiskey1849
+
+Number of clusters (kreiskey1849) =    235            Number of obs =      619
+                                                      F( 12,   234) =     2.21
+                                                      Prob > F      =   0.0121
+Total (centered) SS     =  .1191635678                Centered R2   =   0.1373
+Total (uncentered) SS   =   .277962822                Uncentered R2 =   0.6302
+Residual SS             =  .1028007033                Root MSE      =   .01289
+
+--------------------------------------------------------------------------------------
+                     |               Robust
+        gr_1831_1837 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+---------------------+----------------------------------------------------------------
+            rail1848 |  -.0043249   .0090987    -0.48   0.635     -.022158    .0135082
+        gr_1816_1831 |  -.2063889   .1539242    -1.34   0.180    -.5080749    .0952971
+    street1848_dummy |   .0033739   .0027327     1.23   0.217     -.001982    .0087299
+      ship1849_dummy |  -.0051698   .0019558    -2.64   0.008    -.0090032   -.0013364
+     ln_pop1849civil |   .0054633   .0027775     1.97   0.049     .0000196    .0109071
+  ln_pop1849military |   .0004691   .0007043     0.67   0.505    -.0009114    .0018496
+   fac1849_total2_pc |   .0013537   .0113227     0.12   0.905    -.0208385    .0235458
+       county_mining |  -.0047669   .0063427    -0.75   0.452    -.0171984    .0076645
+county_landownership |  -.0262124   .0466385    -0.56   0.574    -.1176221    .0651973
+    pop1849_young_pc |   .0089825   .0471219     0.19   0.849    -.0833748    .1013397
+   edu1849_pri_enrol |  -.0032489   .0054574    -0.60   0.552    -.0139451    .0074474
+               dist1 |  -.0020722   .0019166    -1.08   0.280    -.0058288    .0016843
+               _cons |  -.0226884   .0320578    -0.71   0.479    -.0855205    .0401437
+--------------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):             15.462
+                                                   Chi-sq(1) P-val =    0.0001
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):               72.036
+                         (Kleibergen-Paap rk Wald F statistic):         68.678
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         rail1848
+Included instruments: gr_1816_1831 street1848_dummy ship1849_dummy
+                      ln_pop1849civil ln_pop1849military fac1849_total2_pc
+                      county_mining county_landownership pop1849_young_pc
+                      edu1849_pri_enrol dist1
+Excluded instruments: slc1848
+------------------------------------------------------------------------------
+
+. 
+. ivreg2 gr_1849_1871 (rail1848=slc1848) gr_1831_1837 $control if node1848==0 ///
+>  & areachange2>1871 [pweight=_weight], cluster(kreiskey1849) 
+(sum of wgt is     1.0592e+02)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on kreiskey1849
+
+Number of clusters (kreiskey1849) =    237            Number of obs =      621
+                                                      F( 12,   236) =     3.99
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  .0775302518                Centered R2   =   0.0988
+Total (uncentered) SS   =  .1487373005                Uncentered R2 =   0.5303
+Residual SS             =  .0698666703                Root MSE      =   .01061
+
+--------------------------------------------------------------------------------------
+                     |               Robust
+        gr_1849_1871 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+---------------------+----------------------------------------------------------------
+            rail1848 |   .0171392   .0081311     2.11   0.035     .0012024     .033076
+        gr_1831_1837 |   .0035813   .0628891     0.06   0.955     -.119679    .1268416
+    street1848_dummy |  -.0020868   .0018465    -1.13   0.258    -.0057059    .0015323
+      ship1849_dummy |   .0050716   .0018388     2.76   0.006     .0014676    .0086755
+     ln_pop1849civil |   .0022219   .0017724     1.25   0.210    -.0012519    .0056958
+  ln_pop1849military |   .0005959   .0004941     1.21   0.228    -.0003725    .0015643
+   fac1849_total2_pc |   .0148852   .0088676     1.68   0.093    -.0024951    .0322654
+       county_mining |   .0064039   .0078739     0.81   0.416    -.0090287    .0218364
+county_landownership |   .0814608   .0377153     2.16   0.031     .0075401    .1553814
+    pop1849_young_pc |  -.0060046   .0313566    -0.19   0.848    -.0674624    .0554532
+   edu1849_pri_enrol |   .0000136   .0041048     0.00   0.997    -.0080316    .0080587
+               dist1 |   .0038529   .0018272     2.11   0.035     .0002716    .0074342
+               _cons |   -.021609   .0203581    -1.06   0.288    -.0615102    .0182922
+--------------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):             16.311
+                                                   Chi-sq(1) P-val =    0.0001
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):               74.565
+                         (Kleibergen-Paap rk Wald F statistic):         78.604
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         rail1848
+Included instruments: gr_1831_1837 street1848_dummy ship1849_dummy
+                      ln_pop1849civil ln_pop1849military fac1849_total2_pc
+                      county_mining county_landownership pop1849_young_pc
+                      edu1849_pri_enrol dist1
+Excluded instruments: slc1848
+------------------------------------------------------------------------------
+
+.  
+. ********************************************************
+. * Q.6 Panel estimates, table 9, columns (1) and (2)
+. 
+. use "$datadir\hornung-rail-panel-city.dta", clear
+
+. 
+. xtset townkey1849 year
+       panel variable:  townkey1849 (strongly balanced)
+        time variable:  year, 1837 to 1885, but with gaps
+                delta:  1 unit
+
+. 
+. gen ln_popcivil = ln(popcivil)
+(75 missing values generated)
+
+. gen ln_popmilitary = ln(popmilitary)
+(4,706 missing values generated)
+
+. * lots of missing observations (probably a lot of zeros, maybe add tiny numer
+. * so ln operation doesn't lose the observation)
+. replace ln_popmilitary=ln(popmilitary+0.01)
+(12,644 real changes made)
+
+. * drop observations with too large city growth rates
+. bysort townkey1849: gen gr_civil = (ln_popcivil - ln_popcivil[_n-1])/(year-year[_n-1])
+(1,055 missing values generated)
+
+. drop if abs(gr_civil) > 0.1
+(1,123 observations deleted)
+
+. * this also drops the missings
+. 
+. xtreg ln_popcivil railaccess ln_popmilitary distance areachange i.year  ///
+>  if year>=1840 & year<=1861, cluster(kreiskey1849)
+
+Random-effects GLS regression                   Number of obs     =      7,748
+Group variable: townkey1849                     Number of groups  =        978
+
+R-sq:                                           Obs per group:
+     within  = 0.3956                                         min =          5
+     between = 0.2811                                         avg =        7.9
+     overall = 0.0573                                         max =          8
+
+                                                Wald chi2(11)     =          .
+corr(u_i, X)   = 0 (assumed)                    Prob > chi2       =          .
+
+                           (Std. Err. adjusted for 324 clusters in kreiskey1849)
+--------------------------------------------------------------------------------
+               |               Robust
+   ln_popcivil |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+    railaccess |   .0881427   .0139605     6.31   0.000     .0607805    .1155048
+ln_popmilitary |   .0012577   .0011341     1.11   0.267     -.000965    .0034804
+      distance |   .0033352   .0031821     1.05   0.295    -.0029016     .009572
+    areachange |   .0724108   .1032193     0.70   0.483    -.1298953    .2747168
+               |
+          year |
+         1843  |   .0453632   .0045859     9.89   0.000      .036375    .0543514
+         1846  |   .0835897    .007674    10.89   0.000      .068549    .0986304
+         1849  |   .0890687   .0086272    10.32   0.000     .0721598    .1059777
+         1852  |   .1304063   .0099527    13.10   0.000     .1108994    .1499131
+         1855  |   .1437715   .0125965    11.41   0.000     .1190829      .16846
+         1858  |   .1741693   .0154876    11.25   0.000     .1438143    .2045244
+         1861  |   .2209555   .0189611    11.65   0.000     .1837924    .2581187
+         1864  |          0  (empty)
+               |
+         _cons |   7.795629   .0297067   262.42   0.000     7.737405    7.853853
+---------------+----------------------------------------------------------------
+       sigma_u |  .54578111
+       sigma_e |  .09705508
+           rho |   .9693466   (fraction of variance due to u_i)
+--------------------------------------------------------------------------------
+
+. 
+. xtreg ln_popcivil railaccess ln_popmilitary distance areachange i.year  ///
+>  if year>=1840 & year<=1861, cluster(kreiskey1849) fe
+
+Fixed-effects (within) regression               Number of obs      =      7748
+Group variable: townkey1849                     Number of groups   =       978
+
+R-sq:  within  = 0.3970                         Obs per group: min =         5
+       between = 0.1109                                        avg =       7.9
+       overall = 0.0273                                        max =         8
+
+                                                F(11,323)          =    111.50
+corr(u_i, Xb)  = 0.0736                         Prob > F           =    0.0000
+
+                           (Std. Err. adjusted for 324 clusters in kreiskey1849)
+--------------------------------------------------------------------------------
+               |               Robust
+   ln_popcivil |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+    railaccess |   .0771159   .0140127     5.50   0.000     .0495483    .1046835
+ln_popmilitary |  -.0010088   .0011159    -0.90   0.367    -.0032043    .0011866
+      distance |   .0039316   .0032279     1.22   0.224    -.0024188    .0102819
+    areachange |   .0698159   .1052657     0.66   0.508    -.1372772    .2769089
+               |
+          year |
+         1843  |   .0466729   .0046442    10.05   0.000     .0375363    .0558095
+         1846  |   .0934525   .0076097    12.28   0.000     .0784816    .1084234
+         1849  |    .100117   .0085096    11.77   0.000     .0833756    .1168583
+         1852  |   .1413512   .0098609    14.33   0.000     .1219515    .1607508
+         1855  |   .1552927   .0125083    12.42   0.000     .1306846    .1799008
+         1858  |   .1861918   .0154044    12.09   0.000     .1558862    .2164974
+         1861  |   .2340228    .018926    12.37   0.000      .196789    .2712567
+               |
+         _cons |   7.792115   .0117535   662.96   0.000     7.768992    7.815238
+---------------+----------------------------------------------------------------
+       sigma_u |  .80182915
+       sigma_e |  .09705508
+           rho |  .98556037   (fraction of variance due to u_i)
+--------------------------------------------------------------------------------
+
+.  
+. ********************************************************
+. * Q.7 Table 9, columns (11) and (12)
+. 
+. // HOMEWORK: estimate the model with xtivreg2 to replicate columns (11) and (12)
+. // and briefly interpret your findings.
+. 
+. ssc install xtivreg2
+checking xtivreg2 consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. 
+. * column (11) and (12)
+. * initial coding below did not work
+. * xtivreg2 ln_popcivil (railaccess=slc) ln_popmilitary distance areachange ///
+> * node i.year if year>=1840 & year<=1861, cluster(kreiskey1849) fe first
+.  
+. * problem with i.year in xtivreg2, so perhaps break out the year into 
+. * individual dummy variables and add those to the regression using y18*
+. 
+. tab year
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1840 |        966        7.69        7.69
+       1843 |        966        7.69       15.37
+       1846 |        971        7.73       23.10
+       1849 |        976        7.77       30.86
+       1852 |        973        7.74       38.60
+       1855 |        968        7.70       46.30
+       1858 |        956        7.61       53.91
+       1861 |        972        7.73       61.64
+       1864 |        967        7.69       69.34
+       1867 |        962        7.65       76.99
+       1871 |        964        7.67       84.66
+       1880 |        965        7.68       92.34
+       1885 |        963        7.66      100.00
+------------+-----------------------------------
+      Total |     12,569      100.00
+
+. forvalues k = 1840(3)1861{
+  2. di `k'
+  3. gen y`k'=0
+  4. replace y`k'=1 if year==`k'
+  5. }
+1840
+(966 real changes made)
+1843
+(966 real changes made)
+1846
+(971 real changes made)
+1849
+(976 real changes made)
+1852
+(973 real changes made)
+1855
+(968 real changes made)
+1858
+(956 real changes made)
+1861
+(972 real changes made)
+
+. 
+. xtivreg2 ln_popcivil (railaccess=slc) ln_popmilitary distance areachange ///
+>  y18* node if year>=1840 & year<=1861, cluster(kreiskey1849) fe first
+Warning - collinearities detected
+Vars dropped:       y1861
+
+FIXED EFFECTS ESTIMATION
+------------------------
+Number of groups =       978                    Obs per group: min =         5
+                                                               avg =       7.9
+                                                               max =         8
+Warning - collinearities detected
+Vars dropped:  y1861
+
+First-stage regressions
+-----------------------
+
+
+FIXED EFFECTS ESTIMATION
+------------------------
+Number of groups =       978                    Obs per group: min =         5
+                                                               avg =       7.9
+                                                               max =         8
+
+First-stage regression of railaccess:
+
+Statistics robust to heteroskedasticity and clustering on kreiskey1849
+Number of obs =                   7748
+Number of clusters (kreiskey1849) =    324
+--------------------------------------------------------------------------------
+               |               Robust
+    railaccess |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+           slc |   .4734231   .0597407     7.92   0.000     .3563125    .5905338
+ln_popmilitary |  -.0024555    .001698    -1.45   0.148    -.0057841     .000873
+      distance |   .0093079    .004294     2.17   0.030     .0008904    .0177255
+    areachange |   .0553113   .0843049     0.66   0.512    -.1099529    .2205755
+         y1840 |   -.168369   .0180801    -9.31   0.000    -.2038118   -.1329263
+         y1843 |  -.1418821    .015304    -9.27   0.000    -.1718828   -.1118814
+         y1846 |  -.1212031   .0129905    -9.33   0.000    -.1466685   -.0957377
+         y1849 |   -.073934   .0100475    -7.36   0.000    -.0936302   -.0542378
+         y1852 |  -.0598949    .009497    -6.31   0.000     -.078512   -.0412779
+         y1855 |  -.0464297   .0091037    -5.10   0.000    -.0642757   -.0285836
+         y1858 |  -.0296111   .0076348    -3.88   0.000    -.0445778   -.0146444
+         y1861 |          0  (omitted)
+          node |   .4079487   .0583609     6.99   0.000      .293543    .5223545
+--------------------------------------------------------------------------------
+F test of excluded instruments:
+  F(  1,   323) =    62.80
+  Prob > F      =   0.0000
+Sanderson-Windmeijer multivariate F test of excluded instruments:
+  F(  1,   323) =    62.80
+  Prob > F      =   0.0000
+
+
+
+Summary results for first-stage regressions
+-------------------------------------------
+
+                                           (Underid)            (Weak id)
+Variable     | F(  1,   323)  P-val | SW Chi-sq(  1) P-val | SW F(  1,   323)
+railaccess   |      62.80    0.0000 |       63.08   0.0000 |       62.80
+
+NB: first-stage test statistics cluster-robust
+
+Stock-Yogo weak ID F test critical values for single endogenous regressor:
+                                   10% maximal IV size             16.38
+                                   15% maximal IV size              8.96
+                                   20% maximal IV size              6.66
+                                   25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for i.i.d. errors only.
+
+Underidentification test
+Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+Kleibergen-Paap rk LM statistic          Chi-sq(1)=30.06    P-val=0.0000
+
+Weak identification test
+Ho: equation is weakly identified
+Cragg-Donald Wald F statistic                                     704.19
+Kleibergen-Paap Wald rk F statistic                                62.80
+
+Stock-Yogo weak ID test critical values for K1=1 and L1=1:
+                                   10% maximal IV size             16.38
+                                   15% maximal IV size              8.96
+                                   20% maximal IV size              6.66
+                                   25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+
+Weak-instrument-robust inference
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and orthogonality conditions are valid
+Anderson-Rubin Wald test           F(1,323)=       3.38     P-val=0.0669
+Anderson-Rubin Wald test           Chi-sq(1)=      3.40     P-val=0.0654
+Stock-Wright LM S statistic        Chi-sq(1)=      6.15     P-val=0.0131
+
+NB: Underidentification, weak identification and weak-identification-robust
+    test statistics cluster-robust
+
+Number of clusters             N_clust  =        324
+Number of observations               N  =       7748
+Number of regressors                 K  =         12
+Number of endogenous regressors      K1 =          1
+Number of instruments                L  =         12
+Number of excluded instruments       L1 =          1
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on kreiskey1849
+
+Number of clusters (kreiskey1849) =    324            Number of obs =     7748
+                                                      F( 12,   323) =   102.19
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  105.5763965                Centered R2   =   0.4014
+Total (uncentered) SS   =  105.5763965                Uncentered R2 =   0.4014
+Residual SS             =  63.19424811                Root MSE      =   .09661
+
+--------------------------------------------------------------------------------
+               |               Robust
+   ln_popcivil |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+    railaccess |   .0785544   .0434183     1.81   0.070    -.0065439    .1636528
+ln_popmilitary |  -.0007696   .0011287    -0.68   0.495    -.0029819    .0014427
+      distance |   .0044496   .0031488     1.41   0.158    -.0017219     .010621
+    areachange |   .0631681   .1034814     0.61   0.542    -.1396517     .265988
+         y1840 |  -.2291367   .0180063   -12.73   0.000    -.2644284   -.1938449
+         y1843 |  -.1827235   .0146121   -12.50   0.000    -.2113627   -.1540842
+         y1846 |  -.1372582   .0120708   -11.37   0.000    -.1609166   -.1135999
+         y1849 |  -.1313128    .011199   -11.73   0.000    -.1532625   -.1093632
+         y1852 |  -.0904534   .0102839    -8.80   0.000    -.1106095   -.0702973
+         y1855 |  -.0768143   .0084563    -9.08   0.000    -.0933883   -.0602402
+         y1858 |  -.0465726   .0071939    -6.47   0.000    -.0606723    -.032473
+         y1861 |          0  (omitted)
+          node |   .0790254   .0353317     2.24   0.025     .0097766    .1482742
+--------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):             30.064
+                                                   Chi-sq(1) P-val =    0.0000
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):              704.186
+                         (Kleibergen-Paap rk Wald F statistic):         62.800
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         railaccess
+Included instruments: ln_popmilitary distance areachange y1840 y1843 y1846
+                      y1849 y1852 y1855 y1858 node
+Excluded instruments: slc
+Dropped collinear:    y1861
+------------------------------------------------------------------------------
+
+. 
+. * careful on the interpretation, as we only have data every 3 years 
+. 
+. /*  This gets pretty close to the estimates in table 9.
+> For first stage regression, the instrument has a coefficient of .475 in the
+> paper vs .473, a difference of only 2/1,000ths.  The total observations is 
+> different, and may be causing some noise.  The error of .06 in the paper is 
+> matched.  The statistical significance is strong in both results.
+> The high coefficient, large F stats, and large Cragg-Donald and Kleibergen-Papp
+> stats show that the instrument is not weak and can be used to address 
+> endogeneity questions arrising from the earlier estimates.  The paper also 
+> mentions that the SLC instrument is time variant as well, as new nodes are 
+> connected, new SLC's also are defined, adding to its strength as an IV.
+> 
+> For the second stage, railroad access in the table shows an extra 7.2% growth
+> over a 3 year time interval, so about 2.4% extra growth per year from having
+> rail access.  This regression shows 7.9% over 3 years, which is approximately
+> 2.6% annual growth, so the results match up fairly well with the table.
+> The differences may come from the small difference in total observations (11).
+> Errors are pretty close as well, 0.040 in the table vs 0.043 here.  The paper
+> shows that the rail access is significant at the 10% level and this regression
+> shows the same.
+> */ 
+.  
+. * close the log file 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 12/leonard_exc12.log
+  log type:  text
+ closed on:  24 Jan 2018, 21:51:33
+--------------------------------------------------------------------------------------------------------------------------------------------------

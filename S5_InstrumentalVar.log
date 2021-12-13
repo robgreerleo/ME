@@ -1,0 +1,871 @@
+---------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 5/leonard_exc5.log
+  log type:  text
+ opened on:  27 Nov 2017, 10:51:22
+
+. 
+. ********************************************************
+. * Q.1 Setting up the dataset
+. * missing observation 3 so use foreach instead of forvalues
+. foreach k of numlist 1/2 4/8 {
+  2. // short for 1 2 4 5 6 7 8
+. use "$datadir/maketable`k'",clear
+  3. *describe
+. duplicates list shortnam
+  4. * result is 0 duplicates, shortnam uniquely describes counties in all datasets
+. }
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+Duplicates in terms of shortnam
+
+(0 observations are duplicates)
+
+. // merging all parts of the dataset
+. use "$datadir/maketable1",clear
+
+. foreach k of numlist 2 4/8 {
+  2. merge 1:1 shortnam using "$datadir/maketable`k'", gen(m_`k') 
+  3. // remove the merge code for each iteration via drop, or option no gen, or 
+. // give a specific name for each file.  
+. }
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               163  (m_2==3)
+    -----------------------------------------
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               163  (m_4==3)
+    -----------------------------------------
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               163  (m_5==3)
+    -----------------------------------------
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               163  (m_6==3)
+    -----------------------------------------
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               163  (m_7==3)
+    -----------------------------------------
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               163  (m_8==3)
+    -----------------------------------------
+
+. // All obs matched so merge code doesn't contain any useful information
+. // in principle, it could identify which countries are part of one dataset
+. // but not part of another.
+. drop m_*
+
+. 
+. save "$workdir/AJRdata", replace
+file C:\Users\roble\Desktop\Working\STATA\HW 5/AJRdata.dta saved
+
+. 
+. ********************************************************
+. * Q.2 Checking settler mortality
+. // look at the distribution of settler mortality
+. histogram extmort4
+(bin=9, start=2.55, width=326.38333)
+
+. * don't forget to exclude missing values (which are treated as large numbers)
+. list shortnam extmort4 if extmort>1000 & extmort!=.
+
+     +---------------------+
+     | shortnam   extmort4 |
+     |---------------------|
+ 57. |      GMB       1470 |
+ 96. |      MLI       2940 |
+107. |      NGA       2004 |
+     +---------------------+
+
+. * must deal with these 3 very large outliers compared to the rest of the data
+. * they adjusted the distribution by taking the log, so a narrower distribution
+. * that reduces the importance of the outliers
+. gen log_extmort4 = log(extmort4)  // ln() does the same
+(76 missing values generated)
+
+. // histogram looks better, less driven by outliers
+. histogram log_extmort4
+(bin=9, start=.93609333, width=.7833413)
+
+. * check to see if log_extmort4 == logem4, scatter shows how close graphically
+. scatter log_extmort4 logem4
+
+. * looks like one outlier off the 45 degree line, can check with list (Tanzania)
+. list shortnam extmort4 logem4 if log_extmort4!=logem4
+
+     +--------------------------------+
+     | shortnam   extmort4     logem4 |
+     |--------------------------------|
+150. |      TZA        145   5.634789 |
+     +--------------------------------+
+
+. 
+. replace logem4 = log_extmort4 if log_extmort4!=logem4
+(1 real change made)
+
+. 
+. drop log_extmort4
+
+. 
+. ********************************************************
+. * Q.3 Match the Descriptive Statistics
+. * use a global macro to define the variables we'll repeatedly use
+. * note: cannot break global macro over multiple lines
+. global sumstats "logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4"
+
+. 
+. sum $sumstats
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+    logpgp95 |        148    8.302509    1.105342   6.109248   10.28875
+    loghjypl |        123   -1.731106    1.083726  -3.540459          0
+      avexpr |        121    7.066491    1.804287   1.636364         10
+      cons90 |         88    3.636364    2.339967          1          7
+     cons00a |         91    1.857143    1.823132          1          7
+-------------+---------------------------------------------------------
+       cons1 |         88    3.590909    2.414689          1          7
+    democ00a |         87    1.149425    2.576859          0         10
+    euro1900 |        154    30.46623    42.38986          0        100
+      logem4 |         87     4.58842    1.299137   .9360933   7.986165
+
+. 
+. * create column 1 for the whole world
+. estpost tabstat $sumstats, stat(mean sd) columns(statistics)
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |  8.302509   1.105342 
+    loghjypl | -1.731106   1.083726 
+      avexpr |  7.066491   1.804287 
+      cons90 |  3.636364   2.339967 
+     cons00a |  1.857143   1.823132 
+       cons1 |  3.590909   2.414689 
+    democ00a |  1.149425   2.576859 
+    euro1900 |  30.46623   42.38986 
+      logem4 |   4.58842   1.299137 
+
+. replace euro1900 = euro1900 / 100
+(81 real changes made)
+
+. * create column 1 for the whole world
+. estpost tabstat $sumstats, stat(mean sd) columns(statistics)
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |  8.302509   1.105342 
+    loghjypl | -1.731106   1.083726 
+      avexpr |  7.066491   1.804287 
+      cons90 |  3.636364   2.339967 
+     cons00a |  1.857143   1.823132 
+       cons1 |  3.590909   2.414689 
+    democ00a |  1.149425   2.576859 
+    euro1900 |  .3046623   .4238986 
+      logem4 |   4.58842   1.299137 
+
+. est store stat1
+
+. 
+. * for the baseline sample
+. estpost tabstat $sumstats if baseco==1, stat(mean sd) columns(statistics)
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |  8.062237   1.043359 
+    loghjypl | -1.934052   .9807444 
+      avexpr |  6.515625   1.468647 
+      cons90 |  3.966667   2.262192 
+     cons00a |      2.25   2.112313 
+       cons1 |       3.4    2.39491 
+    democ00a |  1.644068    3.00438 
+    euro1900 |  .1618095   .2553334 
+      logem4 |  4.646749   1.252543 
+
+. est store stat2
+
+. 
+. * for the quartiles (baseline sample or overall sample choice)
+. xtile quartiles = extmort4 if baseco==1, nquantiles(4)
+
+. * to check how the dataset is split
+. table quartiles if baseco==1, contents(min extmort4 max extmort4 n extmort4)
+
+-------------------------------------------------------
+4         |
+quantiles |
+of        |
+extmort4  | min(extmort4)  max(extmort4)    N(extmort4)
+----------+--------------------------------------------
+        1 |          8.55           68.9             17
+        2 |          69.8           78.1             15
+        3 |          78.2            240             17
+        4 |           280           2940             15
+-------------------------------------------------------
+
+. * we have slightly different cutoff values, we can impose the papers values
+. * cutoff function only works in egen, 3000 is greater than any value in data
+. egen ajr_quartiles = cut(extmort4) if baseco==1, at(0 , 65.4 , 78.1 , 280, 3000) icodes
+(99 missing values generated)
+
+. 
+. table ajr_quartiles if baseco==1, contents(min extmort4 max extmort4 n extmort4)
+
+-------------------------------------------------------
+ajr_quart |
+iles      | min(extmort4)  max(extmort4)    N(extmort4)
+----------+--------------------------------------------
+        0 |          8.55             63             14
+        1 |          67.8           78.1             18
+        2 |          78.2            240             17
+        3 |           280           2940             15
+-------------------------------------------------------
+
+. 
+. forvalues k = 0/3 {
+  2. estpost tabstat $sumstats if ajr_quartiles==`k' & baseco==1, stat(mean sd) columns(statistics)
+  3. est store quart_stats`k'
+  4. }
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |    8.8882   1.289533 
+    loghjypl | -1.025412   .8607438 
+      avexpr |  7.904221   1.547669 
+      cons90 |  5.333333   2.103388 
+     cons00a |  3.666667   2.994945 
+       cons1 |  5.166667   2.757909 
+    democ00a |  3.916667   4.581749 
+    euro1900 |  .3173077   .4392257 
+      logem4 |  3.009049   .5931738 
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |  8.407695   .6391374 
+    loghjypl | -1.463018   .4217214 
+      avexpr |  6.468434   .9539449 
+      cons90 |  5.117647   1.798692 
+     cons00a |  3.277778    2.10896 
+       cons1 |  2.444444    1.91656 
+    democ00a |  2.764706    2.90537 
+    euro1900 |  .2555556   .1797784 
+      logem4 |   4.28263   .0500057 
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |  7.777815   .8016637 
+    loghjypl | -2.195082   .8013878 
+      avexpr |  5.973262   1.320048 
+      cons90 |    3.3125   2.182315 
+     cons00a |     1.125         .5 
+       cons1 |     3.125   2.276694 
+    democ00a |     .1875   .4031129 
+    euro1900 |  .0817059   .1179967 
+      logem4 |  4.880782   .3569139 
+
+Summary statistics: mean sd
+     for variables: logpgp95 loghjypl avexpr cons90 cons00a cons1 democ00a euro1900 logem4
+
+             |   e(mean)      e(sd) 
+-------------+----------------------
+    logpgp95 |  7.199134   .6261228 
+    loghjypl | -3.025752   .4766276 
+      avexpr |  5.890909   1.295802 
+      cons90 |  2.266667   1.579632 
+     cons00a |         1          0 
+       cons1 |  3.428571    2.13809 
+    democ00a |         0          0 
+    euro1900 |  .0053333   .0206559 
+      logem4 |  6.346973   .7538307 
+
+. 
+. * generate overall table using esttab
+. esttab stat1 stat2 quart_stats*, main(mean %12.1fc) aux(sd %12.1fc) ///
+>  nonote unstack label nonum nogaps  mtitle(world)
+
+---------------------------------------------------------------------------------------------------------
+> -----------
+                            world           stat2    quart_stats0    quart_stats1    quart_stats2    quar
+> t_stats3   
+---------------------------------------------------------------------------------------------------------
+> -----------
+log PPP GDP pc in ~a          8.3             8.1             8.9             8.4             7.8        
+>      7.2   
+                            (1.1)           (1.0)           (1.3)           (0.6)           (0.8)        
+>    (0.6)   
+log GDP per work, ~s         -1.7            -1.9            -1.0            -1.5            -2.2        
+>     -3.0   
+                            (1.1)           (1.0)           (0.9)           (0.4)           (0.8)        
+>    (0.5)   
+average protection~o          7.1             6.5             7.9             6.5             6.0        
+>      5.9   
+                            (1.8)           (1.5)           (1.5)           (1.0)           (1.3)        
+>    (1.3)   
+cons90                        3.6             4.0             5.3             5.1             3.3        
+>      2.3   
+                            (2.3)           (2.3)           (2.1)           (1.8)           (2.2)        
+>    (1.6)   
+constraint on e~1900          1.9             2.3             3.7             3.3             1.1        
+>      1.0   
+                            (1.8)           (2.1)           (3.0)           (2.1)           (0.5)        
+>    (0.0)   
+cons on exec in 1s~p          3.6             3.4             5.2             2.4             3.1        
+>      3.4   
+                            (2.4)           (2.4)           (2.8)           (1.9)           (2.3)        
+>    (2.1)   
+democracy in 1900             1.1             1.6             3.9             2.8             0.2        
+>      0.0   
+                            (2.6)           (3.0)           (4.6)           (2.9)           (0.4)        
+>    (0.0)   
+European settlers ~R          0.3             0.2             0.3             0.3             0.1        
+>      0.0   
+                            (0.4)           (0.3)           (0.4)           (0.2)           (0.1)        
+>    (0.0)   
+log settler mortal~y          4.6             4.6             3.0             4.3             4.9        
+>      6.3   
+                            (1.3)           (1.3)           (0.6)           (0.1)           (0.4)        
+>    (0.8)   
+---------------------------------------------------------------------------------------------------------
+> -----------
+Observations                  163              64              14              18              17        
+>       15   
+---------------------------------------------------------------------------------------------------------
+> -----------
+
+. 
+. ********************************************************
+. * Q.4 Running the OLS regression for equation (1), reproducing column
+. * run regression for column 1 and store values
+. regress logpgp95 avexpr
+
+      Source |       SS           df       MS      Number of obs   =       111
+-------------+----------------------------------   F(1, 109)       =    171.44
+       Model |  88.3624725         1  88.3624725   Prob > F        =    0.0000
+    Residual |   56.180757       109  .515419789   R-squared       =    0.6113
+-------------+----------------------------------   Adj R-squared   =    0.6078
+       Total |  144.543229       110  1.31402936   Root MSE        =    .71793
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .5318713   .0406212    13.09   0.000     .4513614    .6123813
+       _cons |   4.626089   .3005752    15.39   0.000     4.030359     5.22182
+------------------------------------------------------------------------------
+
+. est store c1
+
+. 
+. regress logpgp95 avexpr if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(1, 62)        =     72.82
+       Model |  37.0420118         1  37.0420118   Prob > F        =    0.0000
+    Residual |  31.5397067        62  .508704946   R-squared       =    0.5401
+-------------+----------------------------------   Adj R-squared   =    0.5327
+       Total |  68.5817185        63  1.08859871   Root MSE        =    .71324
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |    .522107    .061185     8.53   0.000     .3997999    .6444142
+       _cons |   4.660383   .4085062    11.41   0.000     3.843791    5.476976
+------------------------------------------------------------------------------
+
+. est store c2
+
+.  
+. regress logpgp95 avexpr lat_abs asia africa other if baseco==1 
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(5, 58)        =     28.95
+       Model |  48.9607241         5  9.79214482   Prob > F        =    0.0000
+    Residual |  19.6209944        58  .338293007   R-squared       =    0.7139
+-------------+----------------------------------   Adj R-squared   =    0.6892
+       Total |  68.5817185        63  1.08859871   Root MSE        =    .58163
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .4012826   .0591178     6.79   0.000     .2829455    .5196197
+    lat_abst |   .8752965     .62827     1.39   0.169    -.3823225    2.132916
+        asia |  -.5767549   .2313783    -2.49   0.016    -1.039909   -.1136009
+      africa |  -.8806805   .1699842    -5.18   0.000    -1.220941   -.5404201
+       other |    .107205   .3823564     0.28   0.780    -.6581644    .8725744
+       _cons |   5.736729   .3982025    14.41   0.000      4.93964    6.533818
+------------------------------------------------------------------------------
+
+. est store c6
+
+. 
+. reg loghjypl avexpr if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        61
+-------------+----------------------------------   F(1, 59)        =     55.83
+       Model |  28.0586141         1  28.0586141   Prob > F        =    0.0000
+    Residual |  29.6529645        59  .502592619   R-squared       =    0.4862
+-------------+----------------------------------   Adj R-squared   =    0.4775
+       Total |  57.7115787        60  .961859645   Root MSE        =    .70894
+
+------------------------------------------------------------------------------
+    loghjypl |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .4571098    .061178     7.47   0.000     .3346929    .5795268
+       _cons |  -4.911738   .4087298   -12.02   0.000    -5.729604   -4.093871
+------------------------------------------------------------------------------
+
+. est store c8
+
+. 
+. esttab c1 c2 c6 c8, b(%9.2f) se(%9.2f) stats(N r2)
+
+----------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)   
+                 logpgp95        logpgp95        logpgp95        loghjypl   
+----------------------------------------------------------------------------
+avexpr               0.53***         0.52***         0.40***         0.46***
+                   (0.04)          (0.06)          (0.06)          (0.06)   
+
+lat_abst                                             0.88                   
+                                                   (0.63)                   
+
+asia                                                -0.58*                  
+                                                   (0.23)                   
+
+africa                                              -0.88***                
+                                                   (0.17)                   
+
+other                                                0.11                   
+                                                   (0.38)                   
+
+_cons                4.63***         4.66***         5.74***        -4.91***
+                   (0.30)          (0.41)          (0.40)          (0.41)   
+----------------------------------------------------------------------------
+N                  111.00           64.00           64.00           61.00   
+r2                   0.61            0.54            0.71            0.49   
+----------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. 
+. // HOMEWORK: 1) estimate the regressions from above with robust standard errors
+. // (option ", robust"  ; 2) would you take conventional or robust std errors?
+. * add robust option, and store values (can use robust or vce(robust))
+. regress logpgp95 avexpr, robust
+
+Linear regression                               Number of obs     =        111
+                                                F(1, 109)         =     334.78
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.6113
+                                                Root MSE          =     .71793
+
+------------------------------------------------------------------------------
+             |               Robust
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .5318713   .0290688    18.30   0.000      .474258    .5894847
+       _cons |   4.626089   .2406654    19.22   0.000     4.149098     5.10308
+------------------------------------------------------------------------------
+
+. est store c1r
+
+. 
+. regress logpgp95 avexpr if baseco==1, robust
+
+Linear regression                               Number of obs     =         64
+                                                F(1, 62)          =     109.38
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.5401
+                                                Root MSE          =     .71324
+
+------------------------------------------------------------------------------
+             |               Robust
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |    .522107   .0499225    10.46   0.000     .4223133    .6219007
+       _cons |   4.660383   .3201315    14.56   0.000      4.02045    5.300317
+------------------------------------------------------------------------------
+
+. est store c2r
+
+.  
+. regress logpgp95 avexpr lat_abs asia africa other if baseco==1, robust 
+
+Linear regression                               Number of obs     =         64
+                                                F(5, 58)          =      53.79
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.7139
+                                                Root MSE          =     .58163
+
+------------------------------------------------------------------------------
+             |               Robust
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .4012826   .0640653     6.26   0.000     .2730419    .5295233
+    lat_abst |   .8752965   .6142898     1.42   0.160    -.3543381    2.104931
+        asia |  -.5767549   .2991853    -1.93   0.059    -1.175639    .0221296
+      africa |  -.8806805   .1555275    -5.66   0.000    -1.192003   -.5693585
+       other |    .107205   .2229782     0.48   0.632    -.3391344    .5535445
+       _cons |   5.736729   .3893229    14.74   0.000     4.957415    6.516044
+------------------------------------------------------------------------------
+
+. est store c6r
+
+. 
+. reg loghjypl avexpr if baseco==1, robust
+
+Linear regression                               Number of obs     =         61
+                                                F(1, 59)          =      84.18
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.4862
+                                                Root MSE          =     .70894
+
+------------------------------------------------------------------------------
+             |               Robust
+    loghjypl |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .4571098     .04982     9.18   0.000     .3574203    .5567993
+       _cons |  -4.911738   .3232883   -15.19   0.000    -5.558636   -4.264839
+------------------------------------------------------------------------------
+
+. est store c8r
+
+. 
+. esttab c1r c2r c6r c8r, b(%9.2f) se(%9.2f) stats(N r2)
+
+----------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)   
+                 logpgp95        logpgp95        logpgp95        loghjypl   
+----------------------------------------------------------------------------
+avexpr               0.53***         0.52***         0.40***         0.46***
+                   (0.03)          (0.05)          (0.06)          (0.05)   
+
+lat_abst                                             0.88                   
+                                                   (0.61)                   
+
+asia                                                -0.58                   
+                                                   (0.30)                   
+
+africa                                              -0.88***                
+                                                   (0.16)                   
+
+other                                                0.11                   
+                                                   (0.22)                   
+
+_cons                4.63***         4.66***         5.74***        -4.91***
+                   (0.24)          (0.32)          (0.39)          (0.32)   
+----------------------------------------------------------------------------
+N                  111.00           64.00           64.00           61.00   
+r2                   0.61            0.54            0.71            0.49   
+----------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. /*  Robust vs. conventional standard errors:
+> Using robust errors is never incorrect if the sample size is large enough.
+> Here, however, sample sizes for the base categories are pretty small
+> at only 64 observations, which would lead me to lean towards sticking with
+> conventional standard errors.  
+> 
+> Heteroskedasticity may pose a problem for the t-statistics in conventional 
+> standard errors, and robust errors helps to correct for this, but only when
+> sample sizes are sufficiently large, and 64 samples wouldn't meet this 
+> criteria, in my opinion.  Furthermore, the results of robust errors don't 
+> really change any of the conclusions other than reducing the t-statistic on the 
+> Asia dummy in column 6, but not by a lot to change the conclusions.
+> 
+> Heteroskedasticiy can be tested for; a White test could be employed here to 
+> check to make sure we don't have it.
+> 
+> Model transformations can also address any heterosk. issues.  
+> Transforming a non-log model to a log model, as we have already done here to
+> mitigate the problems of the 3 outliers in the data, can correct for a lot
+> of heterosk. problems, so it's possible that nothing more needs to be done.
+> Further model forms could be considered, such as weighted least squares if 
+> we thought heterosk. was a big problem.
+> */
+. 
+. ********************************************************
+. * Q.5 Running more regressions
+. * column A-4
+. reg avexpr democ00a lat_abs if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        59
+-------------+----------------------------------   F(2, 56)        =      9.61
+       Model |  32.9524854         2  16.4762427   Prob > F        =    0.0003
+    Residual |  96.0273321        56  1.71477379   R-squared       =    0.2555
+-------------+----------------------------------   Adj R-squared   =    0.2289
+       Total |  128.979817        58  2.22378996   Root MSE        =    1.3095
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    democ00a |   .2026428   .0665668     3.04   0.004     .0692935    .3359922
+    lat_abst |   1.727078   1.492374     1.16   0.252    -1.262507    4.716663
+       _cons |    5.85817   .2850473    20.55   0.000     5.287152    6.429189
+------------------------------------------------------------------------------
+
+. * redefine data screen to match sample size and Table 3 results better
+. reg avexpr democ00a lat_abs if excolony==1 & euro1900!=. & logem4!=. & ///
+>  democ00a!=. & avexpr!=. & lat_abs!=.
+
+      Source |       SS           df       MS      Number of obs   =        62
+-------------+----------------------------------   F(2, 59)        =      9.86
+       Model |  33.5377434         2  16.7688717   Prob > F        =    0.0002
+    Residual |  100.318401        59  1.70031188   R-squared       =    0.2506
+-------------+----------------------------------   Adj R-squared   =    0.2251
+       Total |  133.856144        61  2.19436302   Root MSE        =     1.304
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    democ00a |   .2088398   .0656906     3.18   0.002     .0773933    .3402864
+    lat_abst |   1.551565   1.470543     1.06   0.296    -1.390985    4.494114
+       _cons |    5.86717   .2786759    21.05   0.000     5.309541    6.424799
+------------------------------------------------------------------------------
+
+. est store a4
+
+. * column A-10
+. reg avexpr lat_abs logem4 if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(2, 61)        =     13.03
+       Model |  40.6852966         2  20.3426483   Prob > F        =    0.0000
+    Residual |  95.2009443        61  1.56067122   R-squared       =    0.2994
+-------------+----------------------------------   Adj R-squared   =    0.2764
+       Total |  135.886241        63  2.15692446   Root MSE        =    1.2493
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.009012   1.329959     1.51   0.136    -.6504048    4.668428
+      logem4 |  -.5166935   .1408667    -3.67   0.001    -.7983737   -.2350132
+       _cons |   8.552732   .8083151    10.58   0.000     6.936406    10.16906
+------------------------------------------------------------------------------
+
+. est store a10
+
+. * column B-6 
+. reg democ00a euro1900 lat_abs if excolony==1 & euro1900!=. & logem4!=. & ///
+>  logpgp95!=. & democ00a!=.
+
+      Source |       SS           df       MS      Number of obs   =        67
+-------------+----------------------------------   F(2, 64)        =     42.12
+       Model |  308.336428         2  154.168214   Prob > F        =    0.0000
+    Residual |  234.230736        64  3.65985525   R-squared       =    0.5683
+-------------+----------------------------------   Adj R-squared   =    0.5548
+       Total |  542.567164        66  8.22071461   Root MSE        =    1.9131
+
+------------------------------------------------------------------------------
+    democ00a |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    euro1900 |   8.056465   1.189647     6.77   0.000     5.679872    10.43306
+    lat_abst |    1.60511   2.315039     0.69   0.491    -3.019711    6.229932
+       _cons |  -.0184762    .396252    -0.05   0.963    -.8100806    .7731283
+------------------------------------------------------------------------------
+
+. est store b6
+
+. * column B-10
+. reg euro1900 logem4 lat_abs if euro1900!=. & excolony==1 & logem4!=. & ///
+>  lat_abs!=. & logpgp95!=.  
+
+      Source |       SS           df       MS      Number of obs   =        73
+-------------+----------------------------------   F(2, 70)        =     30.59
+       Model |  1.96901875         2  .984509373   Prob > F        =    0.0000
+    Residual |  2.25308469        70  .032186924   R-squared       =    0.4664
+-------------+----------------------------------   Adj R-squared   =    0.4511
+       Total |  4.22210344        72  .058640326   Root MSE        =    .17941
+
+------------------------------------------------------------------------------
+    euro1900 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.0709659   .0197868    -3.59   0.001    -.1104295   -.0315023
+    lat_abst |   .8752357   .1886115     4.64   0.000     .4990619     1.25141
+       _cons |   .3315266   .1140728     2.91   0.005     .1040155    .5590377
+------------------------------------------------------------------------------
+
+. est store b10
+
+. 
+. // HOMEWORK: set up a table with the corresponding results.
+. * what is the purpose of this table?
+. esttab a4 a10 b6 b10, b(%9.2f) se(%9.2f) stats(N r2)
+
+----------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)   
+                   avexpr          avexpr        democ00a        euro1900   
+----------------------------------------------------------------------------
+democ00a             0.21**                                                 
+                   (0.07)                                                   
+
+lat_abst             1.55            2.01            1.61            0.88***
+                   (1.47)          (1.33)          (2.32)          (0.19)   
+
+logem4                              -0.52***                        -0.07***
+                                   (0.14)                          (0.02)   
+
+euro1900                                             8.06***                
+                                                   (1.19)                   
+
+_cons                5.87***         8.55***        -0.02            0.33** 
+                   (0.28)          (0.81)          (0.40)          (0.11)   
+----------------------------------------------------------------------------
+N                   62.00           64.00           67.00           73.00   
+r2                   0.25            0.30            0.57            0.47   
+----------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. /* The purpose of the table:    
+> The OLS results from Table 2 do not alone establish causality.  Table 3 is meant
+> to help address this issue, namely to help rule out reverse causality and omitted
+> variable biases.  The authors are using an instrumental variable approach,
+> accounting for the variation in the quality of institutions variable (avexpr) 
+> that would not also affect income per capita today.   
+> 
+> This table helps to show that settler mortality rates are related to both the 
+> formation of european colonies, and to early institutions.  It also shows
+> that institutional forms tend to persist over time; that early institutions
+> are related to current protection from appropriation today.
+> */
+. 
+. ********************************************************
+. * Q.6 Reproduce Figure 2 Scatterplot and plot population share of 
+. * Europeans against settler mortality
+. 
+. * Figure 2
+. scatter logpgp95 avexpr if baseco==1 || lfit logpgp95 avexpr if baseco==1
+
+. twoway (scatter logpgp95 avexpr if baseco==1) (lfit logpgp95 avexpr if baseco==1)
+
+. * Or do as a two-way graph, which has additonal options
+. twoway (scatter logpgp95 avexpr if baseco==1, msymbol(i) mlabel(shortnam) ///
+>  mlabpos(11) mlabcolor(black) mlabsize(vsmall) ) ///
+>  (lfit logpgp95 avexpr if baseco==1, lcolor(gs0) yscale(range(4 10)) ///
+>   ylabel(4(2)10) xscale(range(4 10)) xlabel(4(2)10) ///
+>   ytitle("Log GDP per capita, PPP, 1995") xtitle("Average Exp. Risk 1985-95") ///
+>   legend(off) title("Figure 2") scheme(s1color) plotregion(style(none)) )
+
+. graph export "$workdir/gdp.pdf", replace
+(file C:\Users\roble\Desktop\Working\STATA\HW 5/gdp.pdf written in PDF format)
+
+. 
+. // HOMEWORK: Plot European settlements against settler mortality
+. // same as B10 estimate from Q5, plot 2 against eachother.
+. // you can simply copy paste and adjust from above
+. // Do you observe anything special?
+. twoway (scatter euro1900 logem4 if baseco==1, msymbol(i) mlabel(shortnam) ///
+>  mlabpos(11) mlabcolor(black) mlabsize(vsmall) ) ///
+>  (lfit euro1900 logem4 if baseco==1, lcolor(gs0) yscale(range(0 1.2)) ///
+>   ylabel(0(.2)1.2) xscale(range(2 8)) xlabel(2(1)8) ///
+>   ytitle("European Settlements in 1900") xtitle("Log of Settler Mortality") ///
+>   legend(off) title("Figure 4: Determinants of Institutions") ///
+>   scheme(s1color) plotregion(style(none)) )
+
+. graph export "$workdir/Settlement Graph.pdf", replace
+(file C:\Users\roble\Desktop\Working\STATA\HW 5/Settlement Graph.pdf written in PDF format)
+
+. 
+. /* The graph shows a negative relation between European settlements 
+> and settler mortality rates.  The higher the mortality rates, the less likely
+> we would expect there to be long term European settlements, and the more likely 
+> those colonies would be extractive ones instead.  The linear regression line 
+> crosses the x-axis, but there's no real-world meaning to having a population of 
+> less than 0 percent Europeans, so this portion of the line can be ignored.  
+> 
+> The 4 outliers of New Zealand, Australia, Canada and the USA (or the 
+> "neo-Europes" are clearly delineated here in the upper left corner, of high 
+> European settlement and low mortality rates.  These 4 are also sometimes 
+> removed from the base sample in the study without major impacts to the
+> authors' conclusions.  
+> */
+. 
+. ********************************************************
+. * Q.7 Commment on source of bias
+. 
+. //HOMEWORK: briefly answer the questions from the problem set.
+. /* Potential bias of the coefficients is usually due to omitted variable
+> bias, where we have excluded a relavant variable for explaining economic
+> performance (typically either because we lacked the data for it, or were 
+> unaware of it).  So the independent variable is correlated to the error term.
+> The direction of the bias on the coefficients in equation 1 will be determined
+> by the sign of the estimated coefficient for the omitted variable(s) and the 
+> sign of the correlation between the independent variables and the omitted
+> variable (OV).  
+> If the correlation is positive, then the bias is as follows:
+> positive bias if the estimated coefficient of the OV is positive.
+> negative bias if the estimated coefficient of the OV is negaive.
+> If the correlation is negative, then the bias is as follows:
+> negative bias if the estimated coefficient of the OV is positive;
+> positive bias if the estimated coefficient is negative.
+> 
+> Measurement error may also induce bias.  Here the quality of institutions
+> depends on an index which is likely an incomplete measure of the quality.
+> The resulting bias will depend on the nature and direction of the measurement
+> errors.
+> 
+> */
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 5/leonard_exc5.log
+  log type:  text
+ closed on:  27 Nov 2017, 10:51:28
+---------------------------------------------------------------------------------------------------------

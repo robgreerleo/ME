@@ -1,0 +1,1023 @@
+------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 9/lindenthal_exc9.log
+  log type:  text
+ opened on:  13 Jan 2018, 14:36:56
+
+. *************************************************************************************************
+. // Q.1: Getting familiar with the dataset and generate some variables
+. 
+. use munic.dta, clear
+
+. sum
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+          uf |          0
+    voters96 |      5,281    17036.55    106254.4        473    6765407
+     illiter |      5,281    36.03288    18.29434      2.392     87.439
+       less4 |      5,281    .6068283    .1797821     .09598     .95888
+       less8 |      5,281    .8757804     .076929     .39442     .99677
+-------------+---------------------------------------------------------
+        gini |      5,281     .559188    .0582134       .358       .819
+      income |      5,281    123.1265    73.10076     24.981    582.849
+    latitude |      5,281   -16.53777    8.230459  -33.69111  -.1302778
+   longitude |      5,281    46.36032     6.31913   32.41083   72.89584
+ right_state |      5,277    5.135839    .3462799   4.442747   6.032453
+-------------+---------------------------------------------------------
+       right |      5,277    5.396822    .6920054   2.272367   7.065567
+  right_meas |      5,277    .9254598    .1369349   .0562529          1
+null_est_s~e |      5,281    .1359888    .0556752   .0142654   .4144314
+blank_est_~e |      5,281    .1089985    .0413049   .0188383   .3514938
+util_pres_~e |      5,276    .7665147    .0675411   .4776434   .9217923
+-------------+---------------------------------------------------------
+util_gov_s~e |      5,281    .7210499    .0974005   .3755918   .9324335
+util_fed_s~e |      5,281    .7041056    .0923644   .3973856   .9595373
+util_sen_s~e |      5,281    .6651702    .1060645   .2592801   .9007241
+    r_util98 |      5,281    .7551972    .0868914   .4222222   .9659638
+    r_util02 |      5,281    .9283428    .0264513   .6146042   .9930362
+-------------+---------------------------------------------------------
+    r_util94 |      4,809    .6527122    .0994946   .3223947   .9060394
+      attend |      5,281    .7649979    .0916246   .2556455   .9566396
+      regist |      5,281    .7475118    .1409523    .189756   2.469256
+urbanization |      5,281    .5072252    .2584534          0          1
+population91 |      5,281    24.80111    153.6904       .618   9649.519
+-------------+---------------------------------------------------------
+population00 |      5,281    28.73694    170.9115       .795   10434.25
+
+. // no municipality code, seems like every municipality is just showing up once, 
+. // so we face a cross section
+. codebook uf
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+uf                                                                                                                                         state
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+                  type:  string (str9), but longest is str2
+
+         unique values:  23                       missing "":  0/5,281
+
+              examples:  "MA"
+                         "MS"
+                         "PR"
+                         "SC"
+
+. // only 23 out of the 27 states are included
+. 
+. // generate treatment variable
+. gen treatment = (voters96>40500)
+
+. 
+. // voters above the threshold
+. gen treat_voters96 = (voters96-40500)*treatment
+
+. // keep in mind to subtract 40500, do you know why? otherwise we would get an
+. // additional intercept later on that would falsely be attributed to the
+. // treatment
+. 
+. // compute the distance to the cut-off
+. gen bandwidth = voters96-40500
+
+. histogram bandwidth if bandwidth>-40500 & bandwidth<40500 
+(bin=37, start=-40027, width=2105.0811)
+
+. // ah, there are not so many municipalities to the right of the cut-off
+. 
+. // let's make sure that the distance is actually always positive
+. replace bandwidth = -1*(voters96-40500) if treatment==0
+(4,974 real changes made)
+
+. histogram bandwidth if bandwidth>-40500 & bandwidth<40500 
+(bin=37, start=39, width=1080.7568)
+
+. // now we mask the fact that many of the municipalities close to the cut-off 
+. // are actually below
+. 
+. 
+. 
+. *************************************************************************************************
+. // Q.2 Generate all the binned values for figure 2 and 3
+. 
+. * Set binned variables
+. // let us inspect the forcing variable
+. sum voters96
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+    voters96 |      5,281    17036.55    106254.4        473    6765407
+
+. // we need to get to 40,500, so let us start with 500 and then generate our bins
+. // CHECK 200000
+. egen bin_voters96=cut(voters96), at(500(4000)200000) 
+(42 missing values generated)
+
+. // let us re-define the mid-points of the bins
+. replace bin_voters96=bin_voters96+2000
+(5,239 real changes made)
+
+. 
+. // compute the means for each group for the variables needed in figure 2 and 3
+. egen bin_util94=mean(r_util94), by(bin_voters96)
+
+. egen bin_util98=mean(r_util98), by(bin_voters96)
+
+. egen bin_util02=mean(r_util02), by(bin_voters96)
+
+. egen bin_attend=mean(attend), by(bin_voters96)
+
+. egen bin_regist=mean(regist), by(bin_voters96)
+
+. 
+. // a bit of labeling
+. label var bin_util94 "Valid Votes/Turnout - 1994 Election (Paper Only)"
+
+. label var bin_util98 "Valid Votes/Turnout - 1998 Election (Discontinuity)"
+
+. label var bin_util02 "Valid Votes/Turnout - 2002 Election (Electronic Only)"
+
+. label var bin_regist "Registered Voters/Total Population"
+
+. label var bin_attend "Turnout/Registered Voters"
+
+. 
+. *************************************************************************************************
+. // Q.3 Replicating figure 2 and 3
+. 
+. global lb = 500
+
+. global ub = 200000
+
+. 
+. // Figure 2
+. twoway scatter bin_util94 bin_voters96 if voters96<$ub & voters96>$lb, mc(green) ms(square) msize(small) || ///
+> scatter bin_util98 bin_voters96 if voters96<$ub & voters96>$lb, mc(blue) || ///
+> scatter bin_util02 bin_voters96 if voters96<$ub & voters96>$lb, mc(red) ms(triangle) || ///
+> qfit r_util94 voters96 if voters96<40500 & voters96>$lb , lc(green) || ///
+> qfit r_util94 voters96 if voters96<$ub & voters96>40500 , lc(green) || ///
+> qfit r_util02 voters96 if voters96<40500 & voters96>$lb , lc(red) || ///
+> qfit r_util02 voters96 if voters96<$ub & voters96>40500 , lc(red) || ///
+> qfit r_util98 voters96 if voters96<40500 & voters96>$lb , lc(blue) || ///
+> qfit r_util98 voters96 if voters96<$ub & voters96>40500 , lc(blue) xtitle("Number of Registered Voters - 1996") xline(40500) legend(order(1 2 
+> 3) rows(3))  ylabel(0.6(.1)1,grid)  
+
+. graph export "$workdir/lindenthal_figure2.pdf", replace
+(file C:\Users\roble\Desktop\Working\STATA\HW 9/lindenthal_figure2.pdf written in PDF format)
+
+. 
+. // Figure 3
+. #delimit ;
+delimiter now ;
+. twoway scatter bin_regist bin_voters96 if voters96<$ub & voters96>$lb , mc(green) || ///
+> scatter bin_attend bin_voters96 if voters96<$ub & voters96>$lb , mc(blue) ms(triangle) || ///
+> qfit regist voters96 if voters96<40500 & voters96>$lb , lc(green) || /// 
+> qfit regist voters96 if voters96<$ub & voters96>40500 , lc(green) || ///
+> qfit attend voters96 if voters96<40500 & voters96>$lb , lc(blue) || ///
+> qfit attend voters96 if voters96<$ub & voters96>40500 , lc(blue) xtitle("Number of Registered Voters - 1996") xline(40500) legend(order(1 2) r
+> ows(2)) ysc(ax(1) r(0.6 1))  ylabel(0.6(.1)1,grid) ;
+
+.  graph export "$workdir/lindenthal_figure3.pdf", replace;
+(file C:\Users\roble\Desktop\Working\STATA\HW 9/lindenthal_figure3.pdf written in PDF format)
+
+. #delimit cr
+delimiter now cr
+. 
+. // window 20k-61k
+. twoway (histogram voters96 if voters96>20000 & voters96<40500, bin(64) xline(40500) frequency) ///
+> (histogram voters96 if voters96>40500 & voters96<61000, bin(64) xline(40500) frequency)
+
+. // looks like there might be some bunching, but not very strong
+. // and we have seen that the share of registered voters does not spike up. So if there is any bunching
+. // it would be in terms of the overall population.
+. 
+. *************************************************************************************************
+. // Q.4 Investigating the differences at the threshold statistically, i.e. table 1
+. 
+. /* old code from Volkers machine, needs updating
+> algorithm to give you the optimal bandwidth.  skip as this needs updating and 
+> just look at the bandwidths from the paper
+> net install rdrobust, from(https://sites.google.com/site/rdpackages/rdrobust/stata) replace
+> 
+> foreach x of var income gini latitude longitude illiter less4 less8 population91 population00 urbanization {
+> rdbwselect `x' voters96, c(40500) kernel(uni) bwselect(IK) // not clear to me why the selected bandwidths differ 
+>  qui reg `x' treatment voters96 treat_voters96 if bandwidth<e(h_IK), rob
+>  est store ik_`x'
+>  qui reg `x' treatment voters96 treat_voters96 if bandwidth<20000, rob
+>  est store a_`x'
+>  qui reg `x' treatment voters96 treat_voters96 if bandwidth<10000, rob
+>  est store b_`x'
+>  qui reg `x' treatment voters96 treat_voters96 if bandwidth<5000, rob
+>  est store c_`x'
+> } 
+> 
+> est table ik_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> est table a_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> est table b_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> est table c_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> 
+> // no idea what is going on with the illiteracy rate... it seems to be more than simply a rescaling by factor 100
+> */
+. 
+. * in class code
+. foreach x of var income gini latitude longitude illiter less4 less8 ///
+> population91 population00 urbanization {
+  2. reg `x' treatment voters96 treat_voters96 if bandwidth<10000, r
+  3. est store b_`x'
+  4. reg `x' treatment voters96 treat_voters96 if bandwidth<5000, r
+  5. est store c_`x'
+  6. }
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       2.19
+                                                Prob > F          =     0.0899
+                                                R-squared         =     0.0267
+                                                Root MSE          =     80.814
+
+--------------------------------------------------------------------------------
+               |               Robust
+        income |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |     6.0962    22.0967     0.28   0.783    -37.44675    49.63915
+      voters96 |   .0036476   .0021357     1.71   0.089    -.0005608    .0078561
+treat_voters96 |  -.0044726   .0037927    -1.18   0.240    -.0119464    .0030012
+         _cons |   31.33525   75.56369     0.41   0.679    -117.5678    180.2383
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.47
+                                                Prob > F          =     0.7056
+                                                R-squared         =     0.0115
+                                                Root MSE          =     81.766
+
+--------------------------------------------------------------------------------
+               |               Robust
+        income |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   14.01778   32.86296     0.43   0.671    -51.09596    79.13152
+      voters96 |   .0026784   .0064292     0.42   0.678    -.0100602    .0154171
+treat_voters96 |  -.0040151   .0113001    -0.36   0.723    -.0264048    .0183746
+         _cons |   65.67267   244.7874     0.27   0.789    -419.3423    550.6876
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       0.60
+                                                Prob > F          =     0.6158
+                                                R-squared         =     0.0095
+                                                Root MSE          =     .05126
+
+--------------------------------------------------------------------------------
+               |               Robust
+          gini |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .0018408   .0126199     0.15   0.884    -.0230275    .0267091
+      voters96 |  -4.03e-07   1.43e-06    -0.28   0.779    -3.23e-06    2.42e-06
+treat_voters96 |  -1.19e-06   2.34e-06    -0.51   0.613    -5.80e-06    3.43e-06
+         _cons |   .5917171    .051045    11.59   0.000     .4911296    .6923046
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.70
+                                                Prob > F          =     0.5547
+                                                R-squared         =     0.0184
+                                                Root MSE          =     .04988
+
+--------------------------------------------------------------------------------
+               |               Robust
+          gini |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   -.004537   .0170398    -0.27   0.791    -.0382993    .0292252
+      voters96 |   5.22e-06   4.40e-06     1.19   0.238    -3.50e-06    .0000139
+treat_voters96 |  -9.28e-06   6.59e-06    -1.41   0.162    -.0000223    3.77e-06
+         _cons |   .3778083   .1678924     2.25   0.026     .0451509    .7104656
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       0.68
+                                                Prob > F          =     0.5624
+                                                R-squared         =     0.0086
+                                                Root MSE          =     8.4152
+
+--------------------------------------------------------------------------------
+               |               Robust
+      latitude |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.3608198   2.070509    -0.17   0.862    -4.440889    3.719249
+      voters96 |  -.0001817   .0002321    -0.78   0.435     -.000639    .0002757
+treat_voters96 |   .0001703   .0003584     0.48   0.635     -.000536    .0008765
+         _cons |  -9.202974   8.244638    -1.12   0.266    -25.44956    7.043608
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.45
+                                                Prob > F          =     0.7209
+                                                R-squared         =     0.0105
+                                                Root MSE          =     8.2958
+
+--------------------------------------------------------------------------------
+               |               Robust
+      latitude |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.6736161   2.998477    -0.22   0.823    -6.614714    5.267482
+      voters96 |   .0004621   .0007156     0.65   0.520    -.0009558    .0018801
+treat_voters96 |  -.0010376   .0010717    -0.97   0.335    -.0031609    .0010858
+         _cons |  -33.66723   27.29086    -1.23   0.220    -87.74058    20.40612
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       0.46
+                                                Prob > F          =     0.7106
+                                                R-squared         =     0.0056
+                                                Root MSE          =     6.3391
+
+--------------------------------------------------------------------------------
+               |               Robust
+     longitude |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .5501275   1.636362     0.34   0.737    -2.674427    3.774682
+      voters96 |   .0001284   .0001736     0.74   0.460    -.0002136    .0004704
+treat_voters96 |  -.0002941   .0002584    -1.14   0.256    -.0008033    .0002152
+         _cons |   40.58266   6.179642     6.57   0.000     28.40529    52.76004
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.47
+                                                Prob > F          =     0.7039
+                                                R-squared         =     0.0147
+                                                Root MSE          =     6.6242
+
+--------------------------------------------------------------------------------
+               |               Robust
+     longitude |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   2.685028   2.465835     1.09   0.279    -2.200709    7.570764
+      voters96 |  -.0006548   .0006473    -1.01   0.314    -.0019374    .0006278
+treat_voters96 |   .0002697   .0009494     0.28   0.777    -.0016114    .0021507
+         _cons |   70.63485   24.76775     2.85   0.005     21.56072     119.709
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       2.09
+                                                Prob > F          =     0.1018
+                                                R-squared         =     0.0245
+                                                Root MSE          =     15.255
+
+--------------------------------------------------------------------------------
+               |               Robust
+       illiter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -4.329636   3.778133    -1.15   0.253    -11.77469    3.115416
+      voters96 |  -.0003706    .000418    -0.89   0.376    -.0011943    .0004531
+treat_voters96 |   .0007073   .0006612     1.07   0.286    -.0005956    .0020101
+         _cons |    42.8165   14.90245     2.87   0.004     13.45028    72.18273
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       1.05
+                                                Prob > F          =     0.3723
+                                                R-squared         =     0.0284
+                                                Root MSE          =     14.641
+
+--------------------------------------------------------------------------------
+               |               Robust
+       illiter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -7.612073   5.638947    -1.35   0.180    -18.78492    3.560778
+      voters96 |   .0011834   .0011815     1.00   0.319    -.0011575    .0035244
+treat_voters96 |  -.0009531   .0020373    -0.47   0.641    -.0049897    .0030836
+         _cons |   -16.4363   44.79643    -0.37   0.714    -105.1947    72.32208
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       2.21
+                                                Prob > F          =     0.0879
+                                                R-squared         =     0.0273
+                                                Root MSE          =     .15669
+
+--------------------------------------------------------------------------------
+               |               Robust
+         less4 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.0267975   .0416674    -0.64   0.521    -.1089056    .0553107
+      voters96 |  -5.74e-06   4.15e-06    -1.38   0.168    -.0000139    2.44e-06
+treat_voters96 |   7.75e-06   7.02e-06     1.10   0.271    -6.09e-06    .0000216
+         _cons |   .7163079   .1473342     4.86   0.000     .4259766    1.006639
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.57
+                                                Prob > F          =     0.6386
+                                                R-squared         =     0.0153
+                                                Root MSE          =     .15594
+
+--------------------------------------------------------------------------------
+               |               Robust
+         less4 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.0412752   .0656809    -0.63   0.531    -.1714135     .088863
+      voters96 |   4.92e-06   .0000124     0.40   0.693    -.0000197    .0000295
+treat_voters96 |  -8.16e-06   .0000233    -0.35   0.727    -.0000543     .000038
+         _cons |    .311908   .4721652     0.66   0.510    -.6236267    1.247443
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       2.62
+                                                Prob > F          =     0.0518
+                                                R-squared         =     0.0329
+                                                Root MSE          =     .07591
+
+--------------------------------------------------------------------------------
+               |               Robust
+         less8 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.0166928   .0204707    -0.82   0.416    -.0570317    .0236461
+      voters96 |  -2.81e-06   1.97e-06    -1.43   0.155    -6.69e-06    1.07e-06
+treat_voters96 |   3.96e-06   3.51e-06     1.13   0.259    -2.94e-06    .0000109
+         _cons |   .9033025   .0700832    12.89   0.000      .765199    1.041406
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.67
+                                                Prob > F          =     0.5752
+                                                R-squared         =     0.0177
+                                                Root MSE          =     .07654
+
+--------------------------------------------------------------------------------
+               |               Robust
+         less8 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.0309573   .0322058    -0.96   0.339     -.094769    .0328543
+      voters96 |   2.38e-06   6.32e-06     0.38   0.707    -.0000101    .0000149
+treat_voters96 |  -1.32e-07   .0000117    -0.01   0.991    -.0000233     .000023
+         _cons |   .7039879   .2417359     2.91   0.004     .2250191    1.182957
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =      99.21
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.6418
+                                                Root MSE          =       6.59
+
+--------------------------------------------------------------------------------
+               |               Robust
+  population91 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   1.066612   1.715856     0.62   0.535    -2.314591    4.447815
+      voters96 |   .0013447   .0001854     7.25   0.000     .0009794    .0017099
+treat_voters96 |   .0002516   .0003309     0.76   0.448    -.0004003    .0009036
+         _cons |   3.491518   6.810654     0.51   0.609    -9.929306    16.91234
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =      27.56
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3763
+                                                Root MSE          =     5.5239
+
+--------------------------------------------------------------------------------
+               |               Robust
+  population91 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .9617867   1.880209     0.51   0.610    -2.763606     4.68718
+      voters96 |   .0018575   .0003552     5.23   0.000     .0011538    .0025613
+treat_voters96 |   -.000902   .0005342    -1.69   0.094    -.0019605    .0001564
+         _cons |  -16.04401     13.504    -1.19   0.237    -42.80046    10.71243
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =      34.96
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3941
+                                                Root MSE          =      13.36
+
+--------------------------------------------------------------------------------
+               |               Robust
+  population00 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   2.639099   3.937718     0.67   0.503    -5.120425    10.39862
+      voters96 |   .0012372   .0003503     3.53   0.001     .0005469    .0019275
+treat_voters96 |   .0009405   .0007255     1.30   0.196    -.0004892    .0023701
+         _cons |   17.49497   12.64179     1.38   0.168    -7.416487    42.40643
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       6.73
+                                                Prob > F          =     0.0003
+                                                R-squared         =     0.1346
+                                                Root MSE          =     12.767
+
+--------------------------------------------------------------------------------
+               |               Robust
+  population00 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   7.059326   5.011355     1.41   0.162    -2.870031    16.98868
+      voters96 |   .0015519    .000698     2.22   0.028     .0001688    .0029349
+treat_voters96 |  -.0019304   .0013639    -1.42   0.160    -.0046328     .000772
+         _cons |   5.661691    26.6979     0.21   0.832    -47.23677    58.56016
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       1.78
+                                                Prob > F          =     0.1523
+                                                R-squared         =     0.0220
+                                                Root MSE          =     .18666
+
+--------------------------------------------------------------------------------
+               |               Robust
+  urbanization |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.0147403   .0486923    -0.30   0.762    -.1106917     .081211
+      voters96 |  -2.36e-06   5.39e-06    -0.44   0.662     -.000013    8.26e-06
+treat_voters96 |  -2.95e-06   8.49e-06    -0.35   0.729    -.0000197    .0000138
+         _cons |     .35258   .1920998     1.84   0.068    -.0259649    .7311248
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       1.44
+                                                Prob > F          =     0.2345
+                                                R-squared         =     0.0305
+                                                Root MSE          =     .17999
+
+--------------------------------------------------------------------------------
+               |               Robust
+  urbanization |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   -.069387   .0731018    -0.95   0.345    -.2142288    .0754548
+      voters96 |    .000026    .000013     2.01   0.047     3.07e-07    .0000517
+treat_voters96 |  -.0000319   .0000234    -1.36   0.176    -.0000784    .0000145
+         _cons |  -.7354057   .4896962    -1.50   0.136    -1.705676    .2348646
+--------------------------------------------------------------------------------
+
+. 
+. est table b_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.3f)
+
+--------------------------------------------------------------------------------------------------------------------------------------
+    Variable | b_income     b_gini     b_latit~e   b_longi~e   b_illiter    b_less4     b_less8    b_popu~91   b_popu~00   b_urban~n  
+-------------+------------------------------------------------------------------------------------------------------------------------
+   treatment |     6.096       0.002      -0.361       0.550      -4.330      -0.027      -0.017       1.067       2.639      -0.015  
+             |    22.097       0.013       2.071       1.636       3.778       0.042       0.020       1.716       3.938       0.049  
+             |     0.783       0.884       0.862       0.737       0.253       0.521       0.416       0.535       0.503       0.762  
+--------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                        legend: b/se/p
+
+. est table c_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.3f)
+
+--------------------------------------------------------------------------------------------------------------------------------------
+    Variable | c_income     c_gini     c_latit~e   c_longi~e   c_illiter    c_less4     c_less8    c_popu~91   c_popu~00   c_urban~n  
+-------------+------------------------------------------------------------------------------------------------------------------------
+   treatment |    14.018      -0.005      -0.674       2.685      -7.612      -0.041      -0.031       0.962       7.059      -0.069  
+             |    32.863       0.017       2.998       2.466       5.639       0.066       0.032       1.880       5.011       0.073  
+             |     0.671       0.791       0.823       0.279       0.180       0.531       0.339       0.610       0.162       0.345  
+--------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                        legend: b/se/p
+
+. 
+. // no differences in other variables at the threshold (good sign)
+. 
+. 
+. *************************************************************************************************
+. // Q.5 Re-estimating panel A of table 2
+. 
+. // Table 2, Panels A
+. /* again old code
+> foreach x of var r_util98 attend regist {
+> rdbwselect `x' voters96, c(40500) kernel(uni) bwselect(IK)
+> reg `x' treatment voters96 treat_voters96 if bandwidth<e(h_IK), rob
+> est store ik2_`x'
+> reg `x' treatment voters96 treat_voters96 if bandwidth<10000, rob
+> est store a2_`x'
+> reg `x' treatment voters96 treat_voters96 if bandwidth<5000, rob
+> est store b2_`x'
+> } 
+> 
+> est table ik2_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> est table a2_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> est table b2_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.2f)
+> 
+> save "$workdir/munic_new.dta", replace
+> */
+. * in class notes, or final notes
+. // back out population 
+. gen population = voters96 / regist
+
+. // is it for 1996? maybe also 1991
+. 
+. 
+. foreach x of var r_util98 attend regist population {
+  2. reg `x' treatment voters96 treat_voters96 if bandwidth<10000, r
+  3. est store b2_`x'
+  4. reg `x' treatment voters96 treat_voters96 if bandwidth<5000, r
+  5. est store c2_`x'
+  6. }
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =      96.76
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.4487
+                                                Root MSE          =     .06946
+
+--------------------------------------------------------------------------------
+               |               Robust
+      r_util98 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .1212816   .0159728     7.59   0.000     .0898061     .152757
+      voters96 |   2.95e-06   2.16e-06     1.37   0.173    -1.30e-06    7.21e-06
+treat_voters96 |  -4.15e-06   2.54e-06    -1.63   0.104    -9.15e-06    8.55e-07
+         _cons |   .6579696   .0760709     8.65   0.000     .5080671    .8078721
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =      38.29
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.4110
+                                                Root MSE          =     .07356
+
+--------------------------------------------------------------------------------
+               |               Robust
+      r_util98 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .1235943   .0252428     4.90   0.000     .0735789    .1736096
+      voters96 |   1.97e-06   7.28e-06     0.27   0.788    -.0000125    .0000164
+treat_voters96 |  -2.74e-06   9.30e-06    -0.29   0.769    -.0000212    .0000157
+         _cons |   .6962007   .2774432     2.51   0.014     .1464826    1.245919
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       0.29
+                                                Prob > F          =     0.8310
+                                                R-squared         =     0.0044
+                                                Root MSE          =     .07999
+
+--------------------------------------------------------------------------------
+               |               Robust
+        attend |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .0127252   .0213284     0.60   0.551    -.0293038    .0547542
+      voters96 |   6.06e-07   2.14e-06     0.28   0.777    -3.61e-06    4.82e-06
+treat_voters96 |  -3.32e-06   3.87e-06    -0.86   0.391    -.0000109    4.29e-06
+         _cons |   .7559844   .0764889     9.88   0.000     .6052582    .9067107
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       0.07
+                                                Prob > F          =     0.9758
+                                                R-squared         =     0.0020
+                                                Root MSE          =     .07681
+
+--------------------------------------------------------------------------------
+               |               Robust
+        attend |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .0073523   .0325938     0.23   0.822    -.0572281    .0719327
+      voters96 |  -8.94e-07   6.28e-06    -0.14   0.887    -.0000133    .0000115
+treat_voters96 |   1.46e-06   .0000118     0.12   0.902     -.000022    .0000249
+         _cons |   .8113506   .2389493     3.40   0.001     .3379032    1.284798
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =       0.36
+                                                Prob > F          =     0.7786
+                                                R-squared         =     0.0034
+                                                Root MSE          =     .09985
+
+--------------------------------------------------------------------------------
+               |               Robust
+        regist |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .0093832   .0340252     0.28   0.783    -.0576656     .076432
+      voters96 |   1.69e-07   2.60e-06     0.07   0.948    -4.95e-06    5.29e-06
+treat_voters96 |  -3.10e-06   5.06e-06    -0.61   0.541    -.0000131    6.88e-06
+         _cons |   .7275338   .0951298     7.65   0.000     .5400744    .9149932
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =       1.21
+                                                Prob > F          =     0.3109
+                                                R-squared         =     0.0137
+                                                Root MSE          =     .10344
+
+--------------------------------------------------------------------------------
+               |               Robust
+        regist |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   .0320883   .0441922     0.73   0.469    -.0554728    .1196494
+      voters96 |  -.0000102   5.59e-06    -1.82   0.072    -.0000212    9.26e-07
+treat_voters96 |   .0000101   .0000103     0.98   0.327    -.0000102    .0000305
+         _cons |   1.121075   .2138395     5.24   0.000     .6973795    1.544771
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        229
+                                                F(3, 225)         =      66.91
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.5263
+                                                Root MSE          =     7636.7
+
+--------------------------------------------------------------------------------
+               |               Robust
+    population |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   478.8852   1935.112     0.25   0.805    -3334.375    4292.145
+      voters96 |    1.22306   .2573914     4.75   0.000     .7158534    1.730266
+treat_voters96 |   .3129567   .3848306     0.81   0.417    -.4453764     1.07129
+         _cons |   5832.496   9496.177     0.61   0.540    -12880.32    24545.31
+--------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        116
+                                                F(3, 112)         =      28.14
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3062
+                                                Root MSE          =     6049.6
+
+--------------------------------------------------------------------------------
+               |               Robust
+    population |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -871.0243   2194.527    -0.40   0.692    -5219.198    3477.149
+      voters96 |     2.0912   .3843474     5.44   0.000     1.329665    2.852735
+treat_voters96 |  -1.042529   .5790046    -1.80   0.074    -2.189753     .104694
+         _cons |  -27255.54   14586.76    -1.87   0.064    -56157.33    1646.258
+--------------------------------------------------------------------------------
+
+. 
+. est table b2_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.3f)
+
+--------------------------------------------------------------
+    Variable | b2_r_u~98   b2_attend   b2_regist   b2_popu~n  
+-------------+------------------------------------------------
+   treatment |     0.121       0.013       0.009     478.885  
+             |     0.016       0.021       0.034    1935.112  
+             |     0.000       0.551       0.783       0.805  
+--------------------------------------------------------------
+                                                legend: b/se/p
+
+. est table c2_*, keep(treatment) b(%9.3f) se(%9.3f) p(%9.3f)
+
+--------------------------------------------------------------
+    Variable | c2_r_u~98   c2_attend   c2_regist   c2_popu~n  
+-------------+------------------------------------------------
+   treatment |     0.124       0.007       0.032    -871.024  
+             |     0.025       0.033       0.044    2194.527  
+             |     0.000       0.822       0.469       0.692  
+--------------------------------------------------------------
+                                                legend: b/se/p
+
+. save "$workdir/munic_new.dta", replace
+file C:\Users\roble\Desktop\Working\STATA\HW 9/munic_new.dta saved
+
+. 
+. *************************************************************************************************
+. // Q.6 Placebo test
+. 
+. // simply copy/paste the code up to here in a new do-file and search+replace 40500 by 70000
+. /*
+> global cutoff = 70000 // or choose global 30000
+> do "$workdir/placebo.do"
+> */
+. *************************************************************************************************
+. // Q.7 Investigating the impact on the political system
+. use "$workdir/munic_new.dta", clear
+
+. 
+. // Table 2, Panel C
+. reg right treatment right_meas right_state voters96 treat_voters96  if bandwidth<20000, cl(uf)
+
+Linear regression                               Number of obs     =        558
+                                                F(5, 21)          =      25.74
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.1879
+                                                Root MSE          =     .69588
+
+                                      (Std. Err. adjusted for 22 clusters in uf)
+--------------------------------------------------------------------------------
+               |               Robust
+         right |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.2223469    .100142    -2.22   0.038    -.4306036   -.0140902
+    right_meas |   .1686946   .2210713     0.76   0.454    -.2910484    .6284376
+   right_state |   .9554049   .1039349     9.19   0.000     .7392605    1.171549
+      voters96 |   2.80e-07   4.17e-06     0.07   0.947    -8.40e-06    8.96e-06
+treat_voters96 |   4.57e-06   6.83e-06     0.67   0.510    -9.63e-06    .0000188
+         _cons |   .1485001    .481169     0.31   0.761    -.8521457    1.149146
+--------------------------------------------------------------------------------
+
+. reg right treatment right_meas right_state voters96 treat_voters96  if bandwidth<10000,   cl(uf)
+
+Linear regression                               Number of obs     =        229
+                                                F(5, 21)          =      24.94
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.1850
+                                                Root MSE          =     .67307
+
+                                      (Std. Err. adjusted for 22 clusters in uf)
+--------------------------------------------------------------------------------
+               |               Robust
+         right |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |   -.250083   .0811284    -3.08   0.006    -.4187988   -.0813672
+    right_meas |  -.2386565   .2114591    -1.13   0.272    -.6784099    .2010969
+   right_state |   .8595526   .0815375    10.54   0.000     .6899861    1.029119
+      voters96 |  -.0000108   .0000116    -0.93   0.363     -.000035    .0000134
+treat_voters96 |   .0000317   .0000198     1.60   0.125    -9.56e-06     .000073
+         _cons |   1.413555    .623445     2.27   0.034     .1170301     2.71008
+--------------------------------------------------------------------------------
+
+. reg right treatment right_meas right_state voters96 treat_voters96  if bandwidth<5000,  cl(uf)
+
+Linear regression                               Number of obs     =        116
+                                                F(5, 19)          =      14.50
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.1852
+                                                Root MSE          =     .67561
+
+                                      (Std. Err. adjusted for 20 clusters in uf)
+--------------------------------------------------------------------------------
+               |               Robust
+         right |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+     treatment |  -.1076224   .1696549    -0.63   0.533    -.4627142    .2474694
+    right_meas |   -.204957   .4952844    -0.41   0.684    -1.241599    .8316852
+   right_state |   .7201473    .180617     3.99   0.001     .3421116    1.098183
+      voters96 |  -.0000912   .0000567    -1.61   0.124    -.0002099    .0000275
+treat_voters96 |   .0001009   .0000746     1.35   0.192    -.0000552     .000257
+         _cons |   5.198466   2.675421     1.94   0.067    -.4012558    10.79819
+--------------------------------------------------------------------------------
+
+. 
+. // The authors argue that it is due to measurement error that the estimates of bandwidths closer 
+. // to the threshold are not getting more precise. The reason is that the ideology is measured at 
+. // the federal level. The state level ideology of parties differs apparently. Not sure if this is
+. // really the case or whether the ideological effect is quite weak in general and needs more 
+. // observations to be found.
+. 
+. 
+. *************************************************************************************************
+. // Q.8
+. 
+. sum illiter, detail
+
+                       illiteracy rate
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%        6.193          2.392
+ 5%       10.799           2.48
+10%       13.872          2.609       Obs               5,281
+25%       20.625          3.014       Sum of Wgt.       5,281
+
+50%       32.338                      Mean           36.03288
+                        Largest       Std. Dev.      18.29434
+75%       52.581         81.551
+90%       62.046         84.218       Variance       334.6831
+95%        66.18         87.053       Skewness       .3168535
+99%       73.657         87.439       Kurtosis       1.921261
+
+. // weird...
+. sum illiter if bandwidth<20000, detail
+
+                       illiteracy rate
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%          7.5          5.146
+ 5%       10.461          5.992
+10%       12.425          7.281       Obs                 558
+25%       15.867          7.415       Sum of Wgt.         558
+
+50%      25.3995                      Mean            30.9268
+                        Largest       Std. Dev.       17.1698
+75%       47.073         68.972
+90%       55.794         69.647       Variance        294.802
+95%       59.845         70.026       Skewness       .4717643
+99%       68.214         70.211       Kurtosis       1.868881
+
+. // ah, that seems closer; this underlines the local validity of the RDD; when going further away 
+. // from the threshold, the median illiteracy rate increases and surprisingly gets quite close to
+. // the sample mean
+. local median = r(p50)
+
+. 
+. qui reg r_util98 treatment voters96 treat_voters96   if bandwidth<10000 & illiter>`median' 
+
+.   estimates store a
+
+. qui reg r_util98 treatment voters96 treat_voters96   if bandwidth<10000 & illiter<`median' 
+
+.   estimates store b
+
+.   
+.   // testing for differences in the coefficients
+. suest a b, rob
+
+Simultaneous results for a, b
+
+                                                Number of obs     =        229
+
+--------------------------------------------------------------------------------
+               |               Robust
+               |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+a_mean         |
+     treatment |   .1524648   .0204918     7.44   0.000     .1123016     .192628
+      voters96 |  -5.65e-07   2.86e-06    -0.20   0.843    -6.17e-06    5.04e-06
+treat_voters96 |  -2.48e-07   3.20e-06    -0.08   0.938    -6.52e-06    6.02e-06
+         _cons |   .7810808   .1009182     7.74   0.000     .5832849    .9788768
+---------------+----------------------------------------------------------------
+a_lnvar        |
+         _cons |  -5.307542   .1750839   -30.31   0.000      -5.6507   -4.964384
+---------------+----------------------------------------------------------------
+b_mean         |
+     treatment |   .0953529   .0218046     4.37   0.000     .0526168    .1380891
+      voters96 |   6.94e-06   3.05e-06     2.28   0.023     9.71e-07    .0000129
+treat_voters96 |  -8.45e-06   3.49e-06    -2.42   0.016    -.0000153   -1.61e-06
+         _cons |   .5160093   .1073498     4.81   0.000     .3056076     .726411
+---------------+----------------------------------------------------------------
+b_lnvar        |
+         _cons |  -5.371809    .127338   -42.19   0.000    -5.621387   -5.122231
+--------------------------------------------------------------------------------
+
+.   lincom [a_mean]treatment-[b_mean]treatment
+
+ ( 1)  [a_mean]treatment - [b_mean]treatment = 0
+
+------------------------------------------------------------------------------
+             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         (1) |   .0571118   .0299225     1.91   0.056    -.0015351    .1157588
+------------------------------------------------------------------------------
+
+.   
+.   
+. // let's check if this result is robust...
+. 
+. sum illiter if bandwidth<15000, detail
+
+                       illiteracy rate
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%        7.567          7.281
+ 5%       10.066          7.415
+10%       11.266            7.5       Obs                 359
+25%       15.277          7.567       Sum of Wgt.         359
+
+50%       23.012                      Mean           28.68828
+                        Largest       Std. Dev.      15.96151
+75%        41.73         64.522
+90%        52.71          66.29       Variance       254.7699
+95%       57.281         66.307       Skewness       .5907977
+99%       64.522         68.972       Kurtosis       2.073415
+
+. local median2 = r(p50)
+
+.   
+. qui reg r_util98 treatment voters96 treat_voters96   if bandwidth<10000 & illiter>`median2' 
+
+.   estimates store a
+
+. qui reg r_util98 treatment voters96 treat_voters96   if bandwidth<10000 & illiter<`median2' 
+
+.   estimates store b
+
+. suest a b, rob
+
+Simultaneous results for a, b
+
+                                                Number of obs     =        229
+
+--------------------------------------------------------------------------------
+               |               Robust
+               |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+a_mean         |
+     treatment |     .13821    .020475     6.75   0.000     .0980798    .1783402
+      voters96 |   4.49e-07   2.84e-06     0.16   0.874    -5.12e-06    6.02e-06
+treat_voters96 |  -9.74e-07   3.16e-06    -0.31   0.758    -7.16e-06    5.21e-06
+         _cons |   .7509273   .1000105     7.51   0.000     .5549103    .9469443
+---------------+----------------------------------------------------------------
+a_lnvar        |
+         _cons |  -5.300856   .1679478   -31.56   0.000    -5.630028   -4.971684
+---------------+----------------------------------------------------------------
+b_mean         |
+     treatment |   .1050926   .0227944     4.61   0.000     .0604163    .1497689
+      voters96 |   6.62e-06   3.15e-06     2.11   0.035     4.57e-07    .0000128
+treat_voters96 |  -8.68e-06   3.64e-06    -2.38   0.017    -.0000158   -1.55e-06
+         _cons |   .5214853   .1106355     4.71   0.000     .3046437     .738327
+---------------+----------------------------------------------------------------
+b_lnvar        |
+         _cons |   -5.37838    .130879   -41.09   0.000    -5.634898   -5.121862
+--------------------------------------------------------------------------------
+
+.   lincom [a_mean]treatment-[b_mean]treatment
+
+ ( 1)  [a_mean]treatment - [b_mean]treatment = 0
+
+------------------------------------------------------------------------------
+             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         (1) |   .0331174     .03064     1.08   0.280    -.0269359    .0931707
+------------------------------------------------------------------------------
+
+.   
+. // => not very stable...
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 9/lindenthal_exc9.log
+  log type:  text
+ closed on:  13 Jan 2018, 14:37:10
+------------------------------------------------------------------------------------------------------------------------------------------------

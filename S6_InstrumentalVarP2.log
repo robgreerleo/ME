@@ -1,0 +1,1563 @@
+---------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 6/leonard_exc6.log
+  log type:  text
+ opened on:   4 Dec 2017, 09:31:16
+
+. 
+. ********************************************************
+. * Q.1 Running IV by hand for column 8, table 4
+. 
+. use "$datadir/AJRdata.dta", clear
+
+. // first stage regression
+. reg avexpr logem4 lat_abs asia africa other if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(5, 58)        =      5.65
+       Model |  44.5331266         5  8.90662532   Prob > F        =    0.0003
+    Residual |  91.3531143        58  1.57505369   R-squared       =    0.3277
+-------------+----------------------------------   Adj R-squared   =    0.2698
+       Total |  135.886241        63  2.15692446   Root MSE        =     1.255
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.3403178   .1830724    -1.86   0.068     -.706777    .0261414
+    lat_abst |   2.009322   1.390869     1.44   0.154    -.7748035    4.793448
+        asia |   .4719882   .5029584     0.94   0.352    -.5347924    1.478769
+      africa |  -.2579581   .4096176    -0.63   0.531    -1.077897    .5619805
+       other |   1.061534   .8436988     1.26   0.213    -.6273127    2.750381
+       _cons |   7.729295   .9569223     8.08   0.000     5.813807    9.644783
+------------------------------------------------------------------------------
+
+. est store ols1
+
+. * option xb is for linear prediction
+. // getting R hat for 2SLS
+. predict predicted_avexpr if baseco==1, xb 
+(99 missing values generated)
+
+. * for AGO, calculate predicted value by hand (getting R hat)
+. di 7.73+-0.34*5.63+2*.14-.26
+5.8358
+
+. 
+. // second stage regression
+. reg logpgp95 predicted_avexpr lat_abs asia africa other if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(5, 58)        =     16.28
+       Model |  40.0446562         5  8.00893125   Prob > F        =    0.0000
+    Residual |  28.5370623        58  .492018315   R-squared       =    0.5839
+-------------+----------------------------------   Adj R-squared   =    0.5480
+       Total |  68.5817185        63  1.08859871   Root MSE        =    .70144
+
+--------------------------------------------------------------------------------
+      logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+predicted_av~r |   1.107077   .3006637     3.68   0.001      .505233    1.708921
+      lat_abst |  -1.178178   1.138543    -1.03   0.305    -3.457219    1.100864
+          asia |  -1.047085   .3402196    -3.08   0.003    -1.728109   -.3660616
+        africa |   -.437267   .2751335    -1.59   0.117    -.9880065    .1134725
+         other |  -.9904011   .6472724    -1.53   0.131    -2.286058    .3052554
+         _cons |   1.440454   1.841699     0.78   0.437    -2.246106    5.127014
+--------------------------------------------------------------------------------
+
+. est store ols2
+
+. 
+. // biased OLS regression
+. reg logpgp95 avexpr lat_abs asia africa other if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(5, 58)        =     28.95
+       Model |  48.9607241         5  9.79214482   Prob > F        =    0.0000
+    Residual |  19.6209944        58  .338293007   R-squared       =    0.7139
+-------------+----------------------------------   Adj R-squared   =    0.6892
+       Total |  68.5817185        63  1.08859871   Root MSE        =    .58163
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .4012826   .0591178     6.79   0.000     .2829455    .5196197
+    lat_abst |   .8752965     .62827     1.39   0.169    -.3823225    2.132916
+        asia |  -.5767549   .2313783    -2.49   0.016    -1.039909   -.1136009
+      africa |  -.8806805   .1699842    -5.18   0.000    -1.220941   -.5404201
+       other |    .107205   .3823564     0.28   0.780    -.6581644    .8725744
+       _cons |   5.736729   .3982025    14.41   0.000      4.93964    6.533818
+------------------------------------------------------------------------------
+
+. est store ols
+
+. 
+. est table ols1 ols2 ols, b(%8.2f) se(%8.2f) p(%8.2f) stats(N r2)
+
+-----------------------------------------------
+    Variable |   ols1       ols2       ols     
+-------------+---------------------------------
+      logem4 |    -0.34                        
+             |     0.18                        
+             |     0.07                        
+    lat_abst |     2.01      -1.18       0.88  
+             |     1.39       1.14       0.63  
+             |     0.15       0.31       0.17  
+        asia |     0.47      -1.05      -0.58  
+             |     0.50       0.34       0.23  
+             |     0.35       0.00       0.02  
+      africa |    -0.26      -0.44      -0.88  
+             |     0.41       0.28       0.17  
+             |     0.53       0.12       0.00  
+       other |     1.06      -0.99       0.11  
+             |     0.84       0.65       0.38  
+             |     0.21       0.13       0.78  
+predicted_~r |                1.11             
+             |                0.30             
+             |                0.00             
+      avexpr |                           0.40  
+             |                           0.06  
+             |                           0.00  
+       _cons |     7.73       1.44       5.74  
+             |     0.96       1.84       0.40  
+             |     0.00       0.44       0.00  
+-------------+---------------------------------
+           N |       64         64         64  
+          r2 |     0.33       0.58       0.71  
+-----------------------------------------------
+                                 legend: b/se/p
+
+. 
+. // an increase in predicted avexpr of 1 unit leads to an incease of gdp by 111
+. // log points (from OLS2). To convert it into percentages: 
+. di exp(1.11)
+3.0343584
+
+. 
+. // for smaller deviations, the correspondence of log points and percentage
+. // points is almost 1:1
+. di exp(.1)
+1.1051709
+
+. di exp(.5)
+1.6487213
+
+. di exp(1)
+2.7182818
+
+. 
+. * State two main assumptions
+. * 1) Exclusion restriction: coviariance between instrument and error term is 0
+. * 2) Relevance: covariance between independent variable (institutional quality
+. * and instrument (settler mortality) is not 0, i.e. settler mortality drive
+. * institutional quality.
+. * What problems did we create? 
+. * After completing this process, we have supposedly stripped the endogeneity 
+. * from institutional quality, unbiasing our estimators.  But we now have 
+. * incorrect standard errors for our t and F-tests, and these must be
+. * corrected as well.
+. * We may also have a problem of weak instruments, in which case, we should
+. * try to find a better instrument.
+. 
+. ********************************************************
+. * Q.2 Running IV by ivreg, replicating table 4
+. 
+. // column 2, put potentially endogenous variable in brackets 
+. * option first reports the first stage
+. ivregress 2sls logpgp95 lat_abs (avexpr = logem4) if baseco==1, first
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(   2,     61)   =      12.82
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.2960
+                                                Adj R-squared     =     0.2729
+                                                Root MSE          =     1.2523
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.001775   1.337176     1.50   0.140    -.6720747    4.675624
+      logem4 |  -.5102681   .1410186    -3.62   0.001    -.7922521    -.228284
+       _cons |   8.529432   .8123128    10.50   0.000     6.905113    10.15375
+------------------------------------------------------------------------------
+
+
+Instrumental variables (2SLS) regression          Number of obs   =         64
+                                                  Wald chi2(2)    =      35.68
+                                                  Prob > chi2     =     0.0000
+                                                  R-squared       =     0.1025
+                                                  Root MSE        =      .9807
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |    .995704   .2164236     4.60   0.000     .5715216    1.419886
+    lat_abst |  -.6472071   1.303473    -0.50   0.620    -3.201967    1.907553
+       _cons |   1.691814   1.262317     1.34   0.180    -.7822821     4.16591
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst logem4
+
+. est store iv2
+
+. 
+. // column 4, change the constraint
+. ivregress 2sls logpgp95 lat_abs (avexpr = logem4) if baseco==1 ///
+>   & rich4!=1, first
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         60
+                                                F(   2,     57)   =       4.25
+                                                Prob > F          =     0.0190
+                                                R-squared         =     0.1298
+                                                Adj R-squared     =     0.0993
+                                                Root MSE          =     1.1888
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |  -.1064988   1.487414    -0.07   0.943    -3.084994    2.871997
+      logem4 |  -.3943223   .1409531    -2.80   0.007     -.676576   -.1120685
+       _cons |   8.215617   .8003371    10.27   0.000     6.612969    9.818264
+------------------------------------------------------------------------------
+
+
+Instrumental variables (2SLS) regression          Number of obs   =         60
+                                                  Wald chi2(2)    =      15.27
+                                                  Prob > chi2     =     0.0005
+                                                  R-squared       =          .
+                                                  Root MSE        =     1.1484
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   1.211776   .3453003     3.51   0.000     .5349998    1.888552
+    lat_abst |   .9385301   1.426023     0.66   0.510    -1.856424    3.733485
+       _cons |   .1442181   2.128189     0.07   0.946    -4.026955    4.315391
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst logem4
+
+. est store iv4
+
+. 
+. // column 8
+. ivregress 2sls logpgp95 lat_abs asia africa other (avexpr = logem4) ///
+>  if baseco==1, first
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(   5,     58)   =       5.65
+                                                Prob > F          =     0.0003
+                                                R-squared         =     0.3277
+                                                Adj R-squared     =     0.2698
+                                                Root MSE          =     1.2550
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.009322   1.390869     1.44   0.154    -.7748035    4.793448
+        asia |   .4719882   .5029584     0.94   0.352    -.5347924    1.478769
+      africa |  -.2579581   .4096176    -0.63   0.531    -1.077897    .5619805
+       other |   1.061534   .8436988     1.26   0.213    -.6273127    2.750381
+      logem4 |  -.3403178   .1830724    -1.86   0.068     -.706777    .0261414
+       _cons |   7.729295   .9569223     8.08   0.000     5.813807    9.644783
+------------------------------------------------------------------------------
+
+
+Instrumental variables (2SLS) regression          Number of obs   =         64
+                                                  Wald chi2(5)    =      37.78
+                                                  Prob > chi2     =     0.0000
+                                                  R-squared       =     0.0108
+                                                  Root MSE        =     1.0296
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   1.107077   .4413079     2.51   0.012     .2421296    1.972025
+    lat_abst |  -1.178179   1.671129    -0.71   0.481    -4.453532    2.097175
+        asia |  -1.047085   .4993671    -2.10   0.036    -2.025827   -.0683437
+      africa |  -.4372669   .4038351    -1.08   0.279    -1.228769    .3542354
+       other |  -.9904017   .9500528    -1.04   0.297    -2.852471    .8716676
+       _cons |   1.440452   2.703206     0.53   0.594    -3.857735    6.738639
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst asia africa other logem4
+
+. est store iv8
+
+. 
+. est table iv2 iv4 iv8 ols1 ols2, b(%8.2f) se(%8.2f) p(%8.2f) stats(N r2)
+
+---------------------------------------------------------------------
+    Variable |   iv2        iv4        iv8        ols1       ols2    
+-------------+-------------------------------------------------------
+      avexpr |     1.00       1.21       1.11                        
+             |     0.22       0.35       0.44                        
+             |     0.00       0.00       0.01                        
+    lat_abst |    -0.65       0.94      -1.18       2.01      -1.18  
+             |     1.30       1.43       1.67       1.39       1.14  
+             |     0.62       0.51       0.48       0.15       0.31  
+        asia |                          -1.05       0.47      -1.05  
+             |                           0.50       0.50       0.34  
+             |                           0.04       0.35       0.00  
+      africa |                          -0.44      -0.26      -0.44  
+             |                           0.40       0.41       0.28  
+             |                           0.28       0.53       0.12  
+       other |                          -0.99       1.06      -0.99  
+             |                           0.95       0.84       0.65  
+             |                           0.30       0.21       0.13  
+      logem4 |                                     -0.34             
+             |                                      0.18             
+             |                                      0.07             
+predicted_~r |                                                 1.11  
+             |                                                 0.30  
+             |                                                 0.00  
+       _cons |     1.69       0.14       1.44       7.73       1.44  
+             |     1.26       2.13       2.70       0.96       1.84  
+             |     0.18       0.95       0.59       0.00       0.44  
+-------------+-------------------------------------------------------
+           N |       64         60         64         64         64  
+          r2 |     0.10          .       0.01       0.33       0.58  
+---------------------------------------------------------------------
+                                                       legend: b/se/p
+
+. 
+. * Interpret results of column 8 statistically and economically
+. /* Once we have stripped out the endogeneity of institutional quality, we see
+> that the relationship between institutions and per capita income is actually
+> economically stronger at 1.1 rather than .52 from the original regression.  
+> We have controls for geography (latitude, continent dummies) which doesn't
+> significantly alter our estimation of the institutional quality coefficient.
+> The institutional quality measure is statistically significant with a t-value o
+> f
+> approx 2.39.  However, this is a much smaller statistical significance than
+> projected in the original OLS regression.
+> The african continent dummy is not significant, indicating that their per 
+> capita income levels are due mainly to the quality of institutions, rather
+> than geography.
+> */ 
+. 
+. ********************************************************
+. * Q.3 
+. * regress column 8 again, need to specify the small sample option
+. * so std error calcs appropriately adjust df
+. ivregress 2sls logpgp95 lat_abs asia africa other (avexpr = logem4) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(   5,     58)   =       5.65
+                                                Prob > F          =     0.0003
+                                                R-squared         =     0.3277
+                                                Adj R-squared     =     0.2698
+                                                Root MSE          =     1.2550
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.009322   1.390869     1.44   0.154    -.7748035    4.793448
+        asia |   .4719882   .5029584     0.94   0.352    -.5347924    1.478769
+      africa |  -.2579581   .4096176    -0.63   0.531    -1.077897    .5619805
+       other |   1.061534   .8436988     1.26   0.213    -.6273127    2.750381
+      logem4 |  -.3403178   .1830724    -1.86   0.068     -.706777    .0261414
+       _cons |   7.729295   .9569223     8.08   0.000     5.813807    9.644783
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F(  5,    58)   =       6.85
+       Model |  .742249161     5  .148449832      Prob > F        =     0.0000
+    Residual |  67.8394693    58  1.16964602      R-squared       =     0.0108
+-------------+------------------------------      Adj R-squared   =    -0.0745
+       Total |  68.5817185    63  1.08859871      Root MSE        =     1.0815
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   1.107077   .4635725     2.39   0.020     .1791359    2.035018
+    lat_abst |  -1.178179    1.75544    -0.67   0.505    -4.692074    2.335717
+        asia |  -1.047085   .5245609    -2.00   0.051    -2.097108    .0029375
+      africa |  -.4372669   .4242092    -1.03   0.307    -1.286414    .4118801
+       other |  -.9904017   .9979844    -0.99   0.325    -2.988084    1.007281
+       _cons |   1.440452   2.839587     0.51   0.614    -4.243599    7.124503
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst asia africa other logem4
+
+. est store iv8b
+
+. mat v_2sls = e(V) 
+
+. 
+. est table iv8 iv8b, b(%8.2f) se(%8.2f) p(%8.2f) stats(N r2)
+
+------------------------------------
+    Variable |   iv8        iv8b    
+-------------+----------------------
+      avexpr |     1.11       1.11  
+             |     0.44       0.46  
+             |     0.01       0.02  
+    lat_abst |    -1.18      -1.18  
+             |     1.67       1.76  
+             |     0.48       0.50  
+        asia |    -1.05      -1.05  
+             |     0.50       0.52  
+             |     0.04       0.05  
+      africa |    -0.44      -0.44  
+             |     0.40       0.42  
+             |     0.28       0.31  
+       other |    -0.99      -0.99  
+             |     0.95       1.00  
+             |     0.30       0.33  
+       _cons |     1.44       1.44  
+             |     2.70       2.84  
+             |     0.59       0.61  
+-------------+----------------------
+           N |       64         64  
+          r2 |     0.01       0.01  
+------------------------------------
+                      legend: b/se/p
+
+. * std. error comes from diagonal elements of this matrix:
+. mat list v_2sls
+
+symmetric v_2sls[6,6]
+              avexpr    lat_abst        asia      africa       other       _cons
+  avexpr   .21489949
+lat_abst  -.62523971   3.0815709
+    asia  -.14320565   .47806503   .27516417
+  africa   .13501006  -.31313586  -.03930708   .17995342
+   other  -.33419797   .74879222   .25861557  -.17727998   .99597279
+   _cons  -1.3081254   3.5455231   .81226054  -.88504544   2.0336362   8.0632537
+
+. di v_2sls[1,1]^(1/2)
+.46357253
+
+. * can use MATA to take the square root of whole matrix, or do it point by point
+. * the above calculation only works with scalars
+. 
+. // running the "wrong" second stage regression
+. regress logpgp95 predicted_avexp lat_abs asia africa other if baseco==1
+
+      Source |       SS           df       MS      Number of obs   =        64
+-------------+----------------------------------   F(5, 58)        =     16.28
+       Model |  40.0446562         5  8.00893125   Prob > F        =    0.0000
+    Residual |  28.5370623        58  .492018315   R-squared       =    0.5839
+-------------+----------------------------------   Adj R-squared   =    0.5480
+       Total |  68.5817185        63  1.08859871   Root MSE        =    .70144
+
+--------------------------------------------------------------------------------
+      logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------+----------------------------------------------------------------
+predicted_av~r |   1.107077   .3006637     3.68   0.001      .505233    1.708921
+      lat_abst |  -1.178178   1.138543    -1.03   0.305    -3.457219    1.100864
+          asia |  -1.047085   .3402196    -3.08   0.003    -1.728109   -.3660616
+        africa |   -.437267   .2751335    -1.59   0.117    -.9880065    .1134725
+         other |  -.9904011   .6472724    -1.53   0.131    -2.286058    .3052554
+         _cons |   1.440454   1.841699     0.78   0.437    -2.246106    5.127014
+--------------------------------------------------------------------------------
+
+. mat v_wrong = e(V)
+
+. * nead MSE and DF
+. scalar mse_wrong = e(rmse)^2
+
+. scalar dfk = e(df_r)
+
+. 
+. // generate the correct residuals: original regressors * second stage coeff.
+. gen fitted_values = _b[predicted_avexpr]*avexpr + _b[lat_abs]*lat_abs + ///
+> _b[asia]*asia + _b[africa]*africa + _b[other]*other +_b[_cons] if baseco==1
+(99 missing values generated)
+
+. gen error = logpgp95 - fitted_values if baseco==1 
+(99 missing values generated)
+
+. gen error_squared = error^2 if baseco==1
+(99 missing values generated)
+
+. sum error_squared
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+error_squa~d |         64    1.059991    1.353112   2.27e-09   7.373865
+
+. scalar mse_corrected = (r(sum) / dfk)
+
+. 
+. mat v_corrected = mse_corrected / mse_wrong * v_wrong
+
+. 
+. mat list v_corrected
+
+symmetric v_corrected[6,6]
+              predicted_~r      lat_abst          asia        africa
+predicted_~r     .21489932
+    lat_abst     -.6252392     3.0815686
+        asia    -.14320555     .47806468       .275164
+      africa     .13500996     -.3131356    -.03930705     .17995331
+       other    -.33419768     .74879147     .25861537    -.17727983
+       _cons    -1.3081244     3.5455202     .81225996     -.8850448
+
+                     other         _cons
+       other     .99597202
+       _cons     2.0336345     8.0632477
+
+. 
+. mat diff = v_2sls - v_corrected
+
+. mat list diff
+
+symmetric diff[6,6]
+              predicted_~r      lat_abst          asia        africa
+predicted_~r     1.647e-07
+    lat_abst    -5.056e-07     2.286e-06
+        asia    -1.017e-07     3.494e-07     1.676e-07
+      africa     9.977e-08    -2.602e-07    -3.178e-08     1.160e-07
+       other    -2.877e-07     7.472e-07     2.002e-07    -1.559e-07
+       _cons    -9.952e-07     2.903e-06     5.794e-07    -6.396e-07
+
+                     other         _cons
+       other     7.751e-07
+       _cons     1.739e-06     6.071e-06
+
+. 
+. // use mata to get the standar errors - calc square roots and save them
+. mata st_matrix("st_errors", sqrt(st_matrix("v_corrected")))
+
+. 
+. mat list st_errors
+
+symmetric st_errors[6,6]
+           c1         c2         c3         c4         c5         c6
+r1  .46357235
+r2          .  1.7554397
+r3          .  .69142222  .52456077
+r4  .36743702          .          .  .42420904
+r5          .  .86532738   .5085424          .  .99798398
+r6          .  1.8829552  .90125466          .  1.4260556  2.8395858
+
+. 
+. ivregress 2sls logpgp95 lat_abs asia africa other (avexpr = logem4) ///
+>  if baseco==1, small
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F(  5,    58)   =       6.85
+       Model |  .742249161     5  .148449832      Prob > F        =     0.0000
+    Residual |  67.8394693    58  1.16964602      R-squared       =     0.0108
+-------------+------------------------------      Adj R-squared   =    -0.0745
+       Total |  68.5817185    63  1.08859871      Root MSE        =     1.0815
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   1.107077   .4635725     2.39   0.020     .1791359    2.035018
+    lat_abst |  -1.178179    1.75544    -0.67   0.505    -4.692074    2.335717
+        asia |  -1.047085   .5245609    -2.00   0.051    -2.097108    .0029375
+      africa |  -.4372669   .4242092    -1.03   0.307    -1.286414    .4118801
+       other |  -.9904017   .9979844    -0.99   0.325    -2.988084    1.007281
+       _cons |   1.440452   2.839587     0.51   0.614    -4.243599    7.124503
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst asia africa other logem4
+
+. * now have the correct standard errors
+. 
+. ********************************************************
+. * Q.4 Table 6, columns 2, 6, 9
+. 
+. global temperature "temp1 temp2 temp3 temp4 temp5"
+
+. global humidity "humid1 humid2 humid3 humid4"
+
+. global soil "steplow deslow stepmid desmid drystep drywint"
+
+. * note that paper identifies highland soil, but no such variable in data
+. 
+. // column 2   
+. ivregress 2sls logpgp95 lat_abs $temperature $humidity (avexpr = logem4) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(  11,     52)   =       3.29
+                                                Prob > F          =     0.0018
+                                                R-squared         =     0.4104
+                                                Adj R-squared     =     0.2857
+                                                Root MSE          =     1.2413
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.651329   1.947318     1.36   0.179     -1.25625    6.558908
+       temp1 |   .2633344   .2271143     1.16   0.252    -.1924038    .7190726
+       temp2 |  -.0034333   .0705034    -0.05   0.961    -.1449087    .1380422
+       temp3 |  -.1108805   .1007364    -1.10   0.276    -.3130229    .0912619
+       temp4 |  -.1061723   .0959728    -1.11   0.274    -.2987558    .0864112
+       temp5 |  -.0137233   .0548949    -0.25   0.804    -.1238779    .0964314
+      humid1 |   .0445604   .0324966     1.37   0.176    -.0206488    .1097697
+      humid2 |  -.0257962   .0508505    -0.51   0.614    -.1278353    .0762428
+      humid3 |  -.0284371   .0338828    -0.84   0.405    -.0964279    .0395536
+      humid4 |   .0419348   .0401676     1.04   0.301    -.0386674    .1225369
+      logem4 |  -.5891001   .1744362    -3.38   0.001    -.9391319   -.2390682
+       _cons |   5.475636   2.776162     1.97   0.054    -.0951396    11.04641
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F( 11,    52)   =       5.38
+       Model |  27.8239936    11  2.52945396      Prob > F        =     0.0000
+    Residual |  40.7577249    52  .783802402      R-squared       =     0.4057
+-------------+------------------------------      Adj R-squared   =     0.2800
+       Total |  68.5817185    63  1.08859871      Root MSE        =     .88533
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .8349553   .2111951     3.95   0.000     .4111614    1.258749
+    lat_abst |    .065897   1.600458     0.04   0.967    -3.145656     3.27745
+       temp1 |  -.0060481   .1718582    -0.04   0.972    -.3509068    .3388107
+       temp2 |   .0031547   .0504272     0.06   0.950    -.0980348    .1043443
+       temp3 |  -.0057883   .0775697    -0.07   0.941    -.1614433    .1498667
+       temp4 |  -.0005877   .0729771    -0.01   0.994     -.147027    .1458515
+       temp5 |  -.0152025   .0391918    -0.39   0.700    -.0938466    .0634415
+      humid1 |   -.030477   .0231358    -1.32   0.194    -.0769023    .0159484
+      humid2 |   .0416244    .036441     1.14   0.259    -.0314998    .1147486
+      humid3 |   .0391758   .0230277     1.70   0.095    -.0070327    .0853842
+      humid4 |  -.0414768   .0272367    -1.52   0.134    -.0961312    .0131776
+       _cons |   2.643295   2.448296     1.08   0.285    -2.269571    7.556161
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst temp1 temp2 temp3 temp4 temp5 humid1 humid2 humid3
+               humid4 logem4
+
+. * test that these are jointly = 0, p-value is 0.97 so they aren't significant
+. test $temperature
+
+ ( 1)  temp1 = 0
+ ( 2)  temp2 = 0
+ ( 3)  temp3 = 0
+ ( 4)  temp4 = 0
+ ( 5)  temp5 = 0
+
+       F(  5,    52) =    0.19
+            Prob > F =    0.9661
+
+. * humidity: if drop small option in regression, humid 3 and 4 are close to
+. * being significant.  but with joint test, they aren't
+. test $humidity
+
+ ( 1)  humid1 = 0
+ ( 2)  humid2 = 0
+ ( 3)  humid3 = 0
+ ( 4)  humid4 = 0
+
+       F(  4,    52) =    0.78
+            Prob > F =    0.5429
+
+. * drop the others and focus on humid 3 as additional regressor
+. ivregress 2sls logpgp95 lat_abs humid3  (avexpr = logem4) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(   3,     60)   =      11.01
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3550
+                                                Adj R-squared     =     0.3227
+                                                Root MSE          =     1.2087
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.820971   1.337129     2.11   0.039     .1463148    5.495628
+      humid3 |   .0220618   .0094198     2.34   0.023     .0032194    .0409043
+      logem4 |  -.4637316   .1375463    -3.37   0.001    -.7388651   -.1885981
+       _cons |   7.052986   1.006014     7.01   0.000     5.040659    9.065313
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F(  3,    60)   =      13.80
+       Model |  7.12855927     3  2.37618642      Prob > F        =     0.0000
+    Residual |  61.4531592    60  1.02421932      R-squared       =     0.1039
+-------------+------------------------------      Adj R-squared   =     0.0591
+       Total |  68.5817185    63  1.08859871      Root MSE        =      1.012
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .9948889   .2483562     4.01   0.000     .4981025    1.491675
+    lat_abst |  -.6382531   1.577537    -0.40   0.687    -3.793796     2.51729
+      humid3 |   .0001972   .0102332     0.02   0.985    -.0202723    .0206667
+       _cons |    1.68557   1.166522     1.44   0.154    -.6478217    4.018961
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst humid3 logem4
+
+. // it is not the case if we only include humid3
+. 
+. //HOMEWORK: Add columns (6) and (9) and comment on the tests.
+. 
+. * column 6, define global variable for natural resource data, 
+. * note: data includes silv which probably means silver, included here
+. * and no variable for total number of minerals in the country, so left out
+. global natres "goldm iron zinc silv oilres"
+
+. ivregress 2sls logpgp95 lat_abs $soil $natres landlock /// 
+>  (avexpr = logem4) if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(  14,     49)   =       3.08
+                                                Prob > F          =     0.0018
+                                                R-squared         =     0.4681
+                                                Adj R-squared     =     0.3161
+                                                Root MSE          =     1.2145
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   1.660766   1.488778     1.12   0.270    -1.331044    4.652577
+     steplow |   .0961721   .4092904     0.23   0.815    -.7263278     .918672
+      deslow |  -.6356499   .4530616    -1.40   0.167    -1.546111    .2748115
+     stepmid |   .2786614   1.013268     0.28   0.784    -1.757576    2.314899
+      desmid |  -.7796329   1.301333    -0.60   0.552    -3.394759    1.835494
+     drystep |  -.2999264   .6038087    -0.50   0.622    -1.513325    .9134726
+     drywint |  -10.33343   7.962573    -1.30   0.200    -26.33482    5.667957
+       goldm |   .1965926   .1693484     1.16   0.251    -.1437258     .536911
+        iron |   .1780623   .1444976     1.23   0.224    -.1123164     .468441
+        zinc |  -.1320451   .1940904    -0.68   0.499    -.5220843    .2579941
+        silv |   .0896997   .1165701     0.77   0.445    -.1445568    .3239561
+      oilres |   3.88e-07   4.24e-07     0.92   0.364    -4.63e-07    1.24e-06
+    landlock |  -.8843285   .5595764    -1.58   0.120    -2.008839    .2401824
+      logem4 |  -.3039967   .1665184    -1.83   0.074     -.638628    .0306345
+       _cons |   7.710954    .880336     8.76   0.000     5.941853    9.480056
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F( 14,    49)   =       1.60
+       Model | -23.4745202    14 -1.67675144      Prob > F        =     0.1142
+    Residual |  92.0562387    49  1.87869875      R-squared       =          .
+-------------+------------------------------      Adj R-squared   =          .
+       Total |  68.5817185    63  1.08859871      Root MSE        =     1.3707
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   1.357631   .6181791     2.20   0.033     .1153538    2.599909
+    lat_abst |   -.941913   2.250619    -0.42   0.677    -5.464701    3.580875
+     steplow |  -.3382135   .4479695    -0.75   0.454    -1.238442    .5620149
+      deslow |   .5986356   .6282385     0.95   0.345    -.6638569    1.861128
+     stepmid |   .0194603   1.159499     0.02   0.987    -2.310641    2.349562
+      desmid |   1.833585   1.527891     1.20   0.236    -1.236826    4.903996
+     drystep |   .3655201   .7638704     0.48   0.634    -1.169535    1.900575
+     drywint |   6.911621   11.20884     0.62   0.540    -15.61339    29.43664
+       goldm |  -.1160672   .2328716    -0.50   0.620    -.5840402    .3519058
+        iron |  -.1358064   .2162498    -0.63   0.533    -.5703766    .2987639
+        zinc |  -.0145707   .2378898    -0.06   0.951    -.4926281    .4634867
+        silv |  -.0027843   .1421136    -0.02   0.984    -.2883722    .2828036
+      oilres |  -3.70e-08   5.44e-07    -0.07   0.946    -1.13e-06    1.06e-06
+    landlock |   .8677224   .9155994     0.95   0.348    -.9722435    2.707688
+       _cons |    -.67467   3.845896    -0.18   0.861    -8.403287    7.053947
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst steplow deslow stepmid desmid drystep drywint goldm
+               iron zinc silv oilres landlock logem4
+
+. test $soil
+
+ ( 1)  steplow = 0
+ ( 2)  deslow = 0
+ ( 3)  stepmid = 0
+ ( 4)  desmid = 0
+ ( 5)  drystep = 0
+ ( 6)  drywint = 0
+
+       F(  6,    49) =    0.40
+            Prob > F =    0.8765
+
+. test $natres
+
+ ( 1)  goldm = 0
+ ( 2)  iron = 0
+ ( 3)  zinc = 0
+ ( 4)  silv = 0
+ ( 5)  oilres = 0
+
+       F(  5,    49) =    0.40
+            Prob > F =    0.8494
+
+. * note: some coefficients or std errors don't match up exactly in magnitude
+. * but are close in range.  The paper states that for column 6 and 9
+. * the sample size drops to 63 from 64, due to a problem with natural resource
+. * variables, but it is unclear which country falls out.  All have data here.
+. * It could be an issue with the extra silver data or the lack of a data field
+. * for number of minerals present
+. 
+. * column 9
+. ivregress 2sls logpgp95 lat_abs $temperature $humidity $soil $natres  ///
+>  landlock edes1975 avelf (avexpr = logem4) if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(  25,     38)   =       2.21
+                                                Prob > F          =     0.0132
+                                                R-squared         =     0.5929
+                                                Adj R-squared     =     0.3250
+                                                Root MSE          =     1.2066
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |    3.54166   2.725717     1.30   0.202    -1.976265    9.059584
+       temp1 |   .2298934    .246419     0.93   0.357    -.2689558    .7287426
+       temp2 |   .0724475   .0886238     0.82   0.419    -.1069621     .251857
+       temp3 |   -.123549     .10563    -1.17   0.249    -.3373858    .0902878
+       temp4 |  -.1157634   .1036394    -1.12   0.271    -.3255704    .0940437
+       temp5 |  -.0050126   .0612736    -0.08   0.935    -.1290546    .1190294
+      humid1 |   .0360945   .0397782     0.91   0.370    -.0444323    .1166214
+      humid2 |  -.0110063   .0614172    -0.18   0.859    -.1353389    .1133263
+      humid3 |  -.0295307   .0383396    -0.77   0.446    -.1071451    .0480837
+      humid4 |   .0435277   .0446378     0.98   0.336    -.0468367    .1338922
+     steplow |   .2143835   .4297228     0.50   0.621    -.6555449    1.084312
+      deslow |    -.11481   .5887406    -0.20   0.846    -1.306653    1.077033
+     stepmid |    .201078   1.140276     0.18   0.861     -2.10729    2.509446
+      desmid |  -1.649577   1.431662    -1.15   0.256    -4.547826    1.248672
+     drystep |  -.5577722   .6295142    -0.89   0.381    -1.832157    .7166126
+     drywint |  -12.71676   10.18169    -1.25   0.219    -33.32852    7.894997
+       goldm |   .2233466   .2161788     1.03   0.308    -.2142846    .6609778
+        iron |   .2442255   .1683802     1.45   0.155    -.0966424    .5850934
+        zinc |  -.2715515   .2265105    -1.20   0.238     -.730098    .1869949
+        silv |    .083418   .1324679     0.63   0.533    -.1847493    .3515852
+      oilres |   4.87e-07   4.46e-07     1.09   0.282    -4.16e-07    1.39e-06
+    landlock |  -1.085284   .7175701    -1.51   0.139    -2.537929    .3673604
+    edes1975 |   .0092898   .0099608     0.93   0.357    -.0108748    .0294544
+       avelf |   1.472949   .7510894     1.96   0.057     -.047552     2.99345
+      logem4 |  -.5678043   .2133022    -2.66   0.011     -.999612   -.1359967
+       _cons |   2.747536   3.049767     0.90   0.373    -3.426395    8.921468
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F( 25,    38)   =       4.60
+       Model |   50.627792    25  2.02511168      Prob > F        =     0.0000
+    Residual |  17.9539265    38  .472471751      R-squared       =     0.7382
+-------------+------------------------------      Adj R-squared   =     0.5660
+       Total |  68.5817185    63  1.08859871      Root MSE        =     .68737
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .7126678   .2140069     3.33   0.002     .2794334    1.145902
+    lat_abst |  -2.519816   1.633331    -1.54   0.131    -5.826323    .7866907
+       temp1 |   .1029365   .1543939     0.67   0.509    -.2096176    .4154906
+       temp2 |  -.0692111   .0494514    -1.40   0.170    -.1693201    .0308979
+       temp3 |  -.0055559   .0678757    -0.08   0.935    -.1429632    .1318513
+       temp4 |  -.0314571   .0665432    -0.47   0.639    -.1661667    .1032524
+       temp5 |  -.0066866   .0350282    -0.19   0.850    -.0775974    .0642242
+      humid1 |  -.0084291   .0231593    -0.36   0.718    -.0553126    .0384544
+      humid2 |   .0203168   .0351882     0.58   0.567     -.050918    .0915516
+      humid3 |    .021848    .021645     1.01   0.319    -.0219701     .065666
+      humid4 |  -.0203429   .0250684    -0.81   0.422    -.0710912    .0304054
+     steplow |  -.3008232   .2364525    -1.27   0.211    -.7794963      .17785
+      deslow |   .4968137   .3377601     1.47   0.150     -.186946    1.180573
+     stepmid |   .2540305   .6484154     0.39   0.697    -1.058618    1.566679
+      desmid |   1.357863    .875866     1.55   0.129     -.415235    3.130961
+     drystep |   .3254122   .4041211     0.81   0.426    -.4926882    1.143513
+     drywint |   2.879405   6.187027     0.47   0.644    -9.645577    15.40439
+       goldm |  -.0127033   .1302938    -0.10   0.923    -.2764692    .2510626
+        iron |  -.1474457   .1088538    -1.35   0.184    -.3678086    .0729173
+        zinc |   .1026722   .1336692     0.77   0.447     -.167927    .3732713
+        silv |  -.0323023   .0758633    -0.43   0.673    -.1858796    .1212749
+      oilres |   6.26e-09   2.69e-07     0.02   0.982    -5.38e-07    5.51e-07
+    landlock |   .7336834   .4787294     1.53   0.134    -.2354537     1.70282
+    edes1975 |   .0026499   .0063324     0.42   0.678    -.0101693    .0154691
+       avelf |  -1.605881    .462384    -3.47   0.001    -2.541928   -.6698336
+       _cons |   3.686136   1.923033     1.92   0.063    -.2068417    7.579113
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst temp1 temp2 temp3 temp4 temp5 humid1 humid2 humid3
+               humid4 steplow deslow stepmid desmid drystep drywint goldm
+               iron zinc silv oilres landlock edes1975 avelf logem4
+
+. test $temperature
+
+ ( 1)  temp1 = 0
+ ( 2)  temp2 = 0
+ ( 3)  temp3 = 0
+ ( 4)  temp4 = 0
+ ( 5)  temp5 = 0
+
+       F(  5,    38) =    0.44
+            Prob > F =    0.8147
+
+. test $humidity
+
+ ( 1)  humid1 = 0
+ ( 2)  humid2 = 0
+ ( 3)  humid3 = 0
+ ( 4)  humid4 = 0
+
+       F(  4,    38) =    0.61
+            Prob > F =    0.6596
+
+. test $soil
+
+ ( 1)  steplow = 0
+ ( 2)  deslow = 0
+ ( 3)  stepmid = 0
+ ( 4)  desmid = 0
+ ( 5)  drystep = 0
+ ( 6)  drywint = 0
+
+       F(  6,    38) =    0.92
+            Prob > F =    0.4895
+
+. test $natres
+
+ ( 1)  goldm = 0
+ ( 2)  iron = 0
+ ( 3)  zinc = 0
+ ( 4)  silv = 0
+ ( 5)  oilres = 0
+
+       F(  5,    38) =    0.40
+            Prob > F =    0.8447
+
+. * test desmid, only one with a relatively high t-value
+. ivregress 2sls logpgp95 lat_abs desmid  (avexpr = logem4) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         64
+                                                F(   3,     60)   =       8.58
+                                                Prob > F          =     0.0001
+                                                R-squared         =     0.3002
+                                                Adj R-squared     =     0.2653
+                                                Root MSE          =     1.2589
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lat_abst |   2.158635    1.36909     1.58   0.120     -.579952    4.897223
+      desmid |  -.7807564   1.293518    -0.60   0.548    -3.368177    1.806664
+      logem4 |  -.5060288    .141933    -3.57   0.001    -.7899371   -.2221205
+       _cons |   8.493481    .818748    10.37   0.000     6.855741    10.13122
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         64
+-------------+------------------------------      F(  3,    60)   =      11.28
+       Model |  7.05312753     3  2.35104251      Prob > F        =     0.0000
+    Residual |   61.528591    60  1.02547652      R-squared       =     0.1028
+-------------+------------------------------      Adj R-squared   =     0.0580
+       Total |  68.5817185    63  1.08859871      Root MSE        =     1.0127
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |    1.01074   .2256243     4.48   0.000     .5594238    1.462055
+    lat_abst |  -.9611872    1.39323    -0.69   0.493    -3.748062    1.825688
+      desmid |   1.412991   1.063885     1.33   0.189    -.7150954    3.541078
+       _cons |   1.628633   1.312048     1.24   0.219     -.995854     4.25312
+------------------------------------------------------------------------------
+Instrumented:  avexpr
+Instruments:   lat_abst desmid logem4
+
+. * still not significant
+. 
+. * What is the purpose of the joint significance tests
+. * To test multiple parameters at once.  It's an exclusion test to see if a 
+. * group of variables has any effect on the dependent variable (income per pers)
+. * comment on omitted climate and natural resource coefficients 
+. * neither climate nor natural resource coefficients are significant, either
+. * economically or statistically
+. 
+. ********************************************************
+. * Q.5 Table 7, columns 7,8 and 9
+. 
+. //column 7
+. ivregress 2sls logpgp95 (avexpr malfal94 = logem4 lat_abs meantemp lt100km) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         60
+                                                F(   4,     55)   =       8.13
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3717
+                                                Adj R-squared     =     0.3260
+                                                Root MSE          =     1.2344
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.4091892   .1687031    -2.43   0.019    -.7472778   -.0711007
+    lat_abst |  -.8114096   1.796142    -0.45   0.653    -4.410958    2.788139
+    meantemp |  -.1161703   .0524934    -2.21   0.031    -.2213695   -.0109712
+     lt100km |   .5739305   .5066375     1.13   0.262    -.4413938    1.589255
+       _cons |   11.06285   1.421006     7.79   0.000     8.215085    13.91061
+------------------------------------------------------------------------------
+
+                                                Number of obs     =         60
+                                                F(   4,     55)   =      22.32
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.6188
+                                                Adj R-squared     =     0.5911
+                                                Root MSE          =     0.2812
+
+------------------------------------------------------------------------------
+    malfal94 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |   .2002974   .0384371     5.21   0.000     .1232677     .277327
+    lat_abst |  -.4050832   .4092304    -0.99   0.327    -1.225199    .4150329
+    meantemp |   .0072876     .01196     0.61   0.545    -.0166808     .031256
+     lt100km |  -.3255799   .1154316    -2.82   0.007    -.5569099   -.0942498
+       _cons |  -.5300792   .3237601    -1.64   0.107    -1.178909    .1187505
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         60
+-------------+------------------------------      F(  2,    57)   =      40.84
+       Model |  32.7465814     2  16.3732907      Prob > F        =     0.0000
+    Residual |  28.6333575    57  .502339605      R-squared       =     0.5335
+-------------+------------------------------      Adj R-squared   =     0.5171
+       Total |  61.3799389    59  1.04033795      Root MSE        =     .70876
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .6886426   .2584165     2.66   0.010     .1711724    1.206113
+    malfal94 |  -.6227376   .6847035    -0.91   0.367    -1.993833    .7483574
+       _cons |   3.813631   1.933694     1.97   0.053    -.0585251    7.685787
+------------------------------------------------------------------------------
+Instrumented:  avexpr malfal94
+Instruments:   logem4 lat_abst meantemp lt100km
+
+.  
+.  // HOMEWORK: Add the regressions for columns 8 and 9 and briefly comment.
+. * column 8
+. ivregress 2sls logpgp95 (avexpr leb95 = logem4 lat_abs meantemp lt100km) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         59
+                                                F(   4,     54)   =       7.61
+                                                Prob > F          =     0.0001
+                                                R-squared         =     0.3604
+                                                Adj R-squared     =     0.3130
+                                                Root MSE          =     1.2443
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.3992883   .1722147    -2.32   0.024    -.7445579   -.0540187
+    lat_abst |  -.8362035   1.811763    -0.46   0.646    -4.468569    2.796162
+    meantemp |  -.1174998   .0530385    -2.22   0.031    -.2238357   -.0111639
+     lt100km |   .5463275   .5162897     1.06   0.295    -.4887711    1.581426
+       _cons |   11.05371    1.43257     7.72   0.000     8.181585    13.92584
+------------------------------------------------------------------------------
+
+                                                Number of obs     =         59
+                                                F(   4,     54)   =      24.97
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.6490
+                                                Adj R-squared     =     0.6231
+                                                Root MSE          =     6.9109
+
+------------------------------------------------------------------------------
+       leb95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -4.579756   .9564976    -4.79   0.000    -6.497418   -2.662093
+    lat_abst |   12.01021   10.06271     1.19   0.238    -8.164315    32.18473
+    meantemp |  -.2426993   .2945814    -0.82   0.414    -.8332994    .3479009
+     lt100km |   12.33407   2.867525     4.30   0.000      6.58503    18.08311
+       _cons |   83.15795   7.956637    10.45   0.000     67.20585    99.11004
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         59
+-------------+------------------------------      F(  2,    56)   =      32.74
+       Model |  25.1463871     2  12.5731936      Prob > F        =     0.0000
+    Residual |  32.1841533    56  .574717023      R-squared       =     0.4386
+-------------+------------------------------      Adj R-squared   =     0.4186
+       Total |  57.3305404    58  .988457594      Root MSE        =      .7581
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |    .737161    .236339     3.12   0.003      .263717    1.210605
+       leb95 |   .0172004   .0234859     0.73   0.467    -.0298475    .0642484
+       _cons |   2.167798   .7314001     2.96   0.004     .7026274    3.632968
+------------------------------------------------------------------------------
+Instrumented:  avexpr leb95
+Instruments:   logem4 lat_abst meantemp lt100km
+
+. 
+. *column 9 
+. ivregress 2sls logpgp95 (avexpr imr95 = logem4 lat_abs meantemp lt100km) ///
+>  if baseco==1, first small
+
+First-stage regressions
+-----------------------
+
+                                                Number of obs     =         59
+                                                F(   4,     54)   =       7.61
+                                                Prob > F          =     0.0001
+                                                R-squared         =     0.3604
+                                                Adj R-squared     =     0.3130
+                                                Root MSE          =     1.2443
+
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.3992883   .1722147    -2.32   0.024    -.7445579   -.0540187
+    lat_abst |  -.8362035   1.811763    -0.46   0.646    -4.468569    2.796162
+    meantemp |  -.1174998   .0530385    -2.22   0.031    -.2238357   -.0111639
+     lt100km |   .5463275   .5162897     1.06   0.295    -.4887711    1.581426
+       _cons |   11.05371    1.43257     7.72   0.000     8.181585    13.92584
+------------------------------------------------------------------------------
+
+                                                Number of obs     =         59
+                                                F(   4,     54)   =      25.50
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.6538
+                                                Adj R-squared     =     0.6282
+                                                Root MSE          =    22.6964
+
+------------------------------------------------------------------------------
+       imr95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |   17.19689   3.141298     5.47   0.000     10.89897    23.49482
+    lat_abst |   6.077564   33.04763     0.18   0.855    -60.17895    72.33408
+    meantemp |   1.292238   .9674547     1.34   0.187    -.6473922    3.231867
+     lt100km |  -38.70844   9.417433    -4.11   0.000    -57.58926   -19.82762
+       _cons |   -42.6305   26.13093    -1.63   0.109    -95.01986    9.758858
+------------------------------------------------------------------------------
+
+
+
+Instrumental variables (2SLS) regression
+
+      Source |       SS       df       MS         Number of obs   =         59
+-------------+------------------------------      F(  2,    56)   =      39.53
+       Model |  30.5136787     2  15.2568394      Prob > F        =     0.0000
+    Residual |  26.8168617    56   .47887253      R-squared       =     0.5322
+-------------+------------------------------      Adj R-squared   =     0.5155
+       Total |  57.3305404    58  .988457594      Root MSE        =     .69201
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .6750314   .2265382     2.98   0.004      .221221    1.128842
+       imr95 |  -.0071936   .0067827    -1.06   0.293     -.020781    .0063939
+       _cons |   4.047298   1.819456     2.22   0.030     .4024896    7.692106
+------------------------------------------------------------------------------
+Instrumented:  avexpr imr95
+Instruments:   logem4 lat_abst meantemp lt100km
+
+.  
+.  /* Testing to see if malaria and life expectancy have any impact on economic
+>  performance for comparing results to other models that treat these variables
+>  as endogenous along with institutional quality.  The results don't change, 
+>  only institutional quality is significant after stripping out the endogeniety
+>  from all of these variables.
+>  */
+. 
+. ********************************************************
+. * Q.6 Table 7, with overid tests and weak instruments
+. * testing the second assumption - relevance and weak instruments
+. ssc install ivreg2
+checking ivreg2 consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. ssc install ranktest
+checking ranktest consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. 
+. ivreg2 logpgp95 (avexpr malfal94 = logem4 lat_abs meantemp lt100km) ///
+>  if baseco==1, first 
+
+First-stage regressions
+-----------------------
+
+
+First-stage regression of avexpr:
+
+Statistics consistent for homoskedasticity only
+Number of obs =                     60
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.4091892   .1687031    -2.43   0.019    -.7472778   -.0711007
+    lat_abst |  -.8114096   1.796142    -0.45   0.653    -4.410958    2.788139
+    meantemp |  -.1161703   .0524934    -2.21   0.031    -.2213695   -.0109712
+     lt100km |   .5739305   .5066375     1.13   0.262    -.4413938    1.589255
+       _cons |   11.06285   1.421006     7.79   0.000     8.215085    13.91061
+------------------------------------------------------------------------------
+F test of excluded instruments:
+  F(  4,    55) =     8.13
+  Prob > F      =   0.0000
+Sanderson-Windmeijer multivariate F test of excluded instruments:
+  F(  3,    55) =     1.35
+  Prob > F      =   0.2676
+
+
+First-stage regression of malfal94:
+
+Statistics consistent for homoskedasticity only
+Number of obs =                     60
+------------------------------------------------------------------------------
+    malfal94 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |   .2002974   .0384371     5.21   0.000     .1232677     .277327
+    lat_abst |  -.4050832   .4092304    -0.99   0.327    -1.225199    .4150329
+    meantemp |   .0072876     .01196     0.61   0.545    -.0166808     .031256
+     lt100km |  -.3255799   .1154316    -2.82   0.007    -.5569099   -.0942498
+       _cons |  -.5300792   .3237601    -1.64   0.107    -1.178909    .1187505
+------------------------------------------------------------------------------
+F test of excluded instruments:
+  F(  4,    55) =    22.32
+  Prob > F      =   0.0000
+Sanderson-Windmeijer multivariate F test of excluded instruments:
+  F(  3,    55) =     1.47
+  Prob > F      =   0.2338
+
+
+
+Summary results for first-stage regressions
+-------------------------------------------
+
+                                           (Underid)            (Weak id)
+Variable     | F(  4,    55)  P-val | SW Chi-sq(  3) P-val | SW F(  3,    55)
+avexpr       |       8.13    0.0000 |        4.42   0.2196 |        1.35
+malfal94     |      22.32    0.0000 |        4.80   0.1872 |        1.47
+
+Stock-Yogo weak ID F test critical values for single endogenous regressor:
+                                    5% maximal IV relative bias    16.85
+                                   10% maximal IV relative bias    10.27
+                                   20% maximal IV relative bias     6.71
+                                   30% maximal IV relative bias     5.34
+                                   10% maximal IV size             24.58
+                                   15% maximal IV size             13.96
+                                   20% maximal IV size             10.26
+                                   25% maximal IV size              8.31
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Sanderson-Windmeijer F statistic.
+
+Underidentification test
+Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+Anderson canon. corr. LM statistic       Chi-sq(3)=4.08     P-val=0.2527
+
+Weak identification test
+Ho: equation is weakly identified
+Cragg-Donald Wald F statistic                                       1.00
+
+Stock-Yogo weak ID test critical values for K1=2 and L1=4:
+                                    5% maximal IV relative bias    11.04
+                                   10% maximal IV relative bias     7.56
+                                   20% maximal IV relative bias     5.57
+                                   30% maximal IV relative bias     4.73
+                                   10% maximal IV size             16.87
+                                   15% maximal IV size              9.93
+                                   20% maximal IV size              7.54
+                                   25% maximal IV size              6.28
+Source: Stock-Yogo (2005).  Reproduced by permission.
+
+Weak-instrument-robust inference
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and orthogonality conditions are valid
+Anderson-Rubin Wald test           F(4,55)=       28.75     P-val=0.0000
+Anderson-Rubin Wald test           Chi-sq(4)=    125.47     P-val=0.0000
+Stock-Wright LM S statistic        Chi-sq(4)=     40.59     P-val=0.0000
+
+Number of observations               N  =         60
+Number of regressors                 K  =          3
+Number of endogenous regressors      K1 =          2
+Number of instruments                L  =          5
+Number of excluded instruments       L1 =          4
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                                      Number of obs =       60
+                                                      F(  2,    57) =    40.84
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  61.37993888                Centered R2   =   0.5335
+Total (uncentered) SS   =  3953.663908                Uncentered R2 =   0.9928
+Residual SS             =  28.63335748                Root MSE      =    .6908
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   .6886426   .2518733     2.73   0.006     .1949801    1.182305
+    malfal94 |  -.6227376   .6673664    -0.93   0.351    -1.930752    .6852765
+       _cons |   3.813631   1.884732     2.02   0.043      .119624    7.507638
+------------------------------------------------------------------------------
+Underidentification test (Anderson canon. corr. LM statistic):           4.083
+                                                   Chi-sq(3) P-val =    0.2527
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                1.004
+Stock-Yogo weak ID test critical values:  5% maximal IV relative bias    11.04
+                                         10% maximal IV relative bias     7.56
+                                         20% maximal IV relative bias     5.57
+                                         30% maximal IV relative bias     4.73
+                                         10% maximal IV size             16.87
+                                         15% maximal IV size              9.93
+                                         20% maximal IV size              7.54
+                                         25% maximal IV size              6.28
+Source: Stock-Yogo (2005).  Reproduced by permission.
+------------------------------------------------------------------------------
+Sargan statistic (overidentification test of all instruments):           1.023
+                                                   Chi-sq(2) P-val =    0.5995
+------------------------------------------------------------------------------
+Instrumented:         avexpr malfal94
+Excluded instruments: logem4 lat_abst meantemp lt100km
+------------------------------------------------------------------------------
+
+.  
+. * further analysis, aside 
+. * check main specification from colum 8 (case #2)
+. ivreg2 logpgp95 (avexpr = logem4) lat_abs asia africa other ///
+>  if baseco==1, first 
+
+First-stage regressions
+-----------------------
+
+
+First-stage regression of avexpr:
+
+Statistics consistent for homoskedasticity only
+Number of obs =                     64
+------------------------------------------------------------------------------
+      avexpr |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      logem4 |  -.3403178   .1830724    -1.86   0.068     -.706777    .0261414
+    lat_abst |   2.009322   1.390869     1.44   0.154    -.7748035    4.793448
+        asia |   .4719882   .5029584     0.94   0.352    -.5347924    1.478769
+      africa |  -.2579581   .4096176    -0.63   0.531    -1.077897    .5619805
+       other |   1.061534   .8436988     1.26   0.213    -.6273127    2.750381
+       _cons |   7.729295   .9569223     8.08   0.000     5.813807    9.644783
+------------------------------------------------------------------------------
+F test of excluded instruments:
+  F(  1,    58) =     3.46
+  Prob > F      =   0.0681
+Sanderson-Windmeijer multivariate F test of excluded instruments:
+  F(  1,    58) =     3.46
+  Prob > F      =   0.0681
+
+
+
+Summary results for first-stage regressions
+-------------------------------------------
+
+                                           (Underid)            (Weak id)
+Variable     | F(  1,    58)  P-val | SW Chi-sq(  1) P-val | SW F(  1,    58)
+avexpr       |       3.46    0.0681 |        3.81   0.0509 |        3.46
+
+Stock-Yogo weak ID F test critical values for single endogenous regressor:
+                                   10% maximal IV size             16.38
+                                   15% maximal IV size              8.96
+                                   20% maximal IV size              6.66
+                                   25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Sanderson-Windmeijer F statistic.
+
+Underidentification test
+Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+Anderson canon. corr. LM statistic       Chi-sq(1)=3.60     P-val=0.0578
+
+Weak identification test
+Ho: equation is weakly identified
+Cragg-Donald Wald F statistic                                       3.46
+
+Stock-Yogo weak ID test critical values for K1=1 and L1=1:
+                                   10% maximal IV size             16.38
+                                   15% maximal IV size              8.96
+                                   20% maximal IV size              6.66
+                                   25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+
+Weak-instrument-robust inference
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and orthogonality conditions are valid
+Anderson-Rubin Wald test           F(1,58)=       13.56     P-val=0.0005
+Anderson-Rubin Wald test           Chi-sq(1)=     14.96     P-val=0.0001
+Stock-Wright LM S statistic        Chi-sq(1)=     12.13     P-val=0.0005
+
+Number of observations               N  =         64
+Number of regressors                 K  =          6
+Number of endogenous regressors      K1 =          1
+Number of instruments                L  =          6
+Number of excluded instruments       L1 =          1
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                                      Number of obs =       64
+                                                      F(  5,    58) =     6.85
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =   68.5817185                Centered R2   =   0.0108
+Total (uncentered) SS   =  4228.560224                Uncentered R2 =   0.9840
+Residual SS             =  67.83946934                Root MSE      =     1.03
+
+------------------------------------------------------------------------------
+    logpgp95 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      avexpr |   1.107077   .4413079     2.51   0.012     .2421296    1.972025
+    lat_abst |  -1.178179   1.671129    -0.71   0.481    -4.453532    2.097175
+        asia |  -1.047085   .4993671    -2.10   0.036    -2.025827   -.0683437
+      africa |  -.4372669   .4038351    -1.08   0.279    -1.228769    .3542354
+       other |  -.9904017   .9500528    -1.04   0.297    -2.852471    .8716676
+       _cons |   1.440452   2.703206     0.53   0.594    -3.857735    6.738639
+------------------------------------------------------------------------------
+Underidentification test (Anderson canon. corr. LM statistic):           3.599
+                                                   Chi-sq(1) P-val =    0.0578
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                3.456
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+------------------------------------------------------------------------------
+Sargan statistic (overidentification test of all instruments):           0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         avexpr
+Included instruments: lat_abst asia africa other
+Excluded instruments: logem4
+------------------------------------------------------------------------------
+
+. * low F score at 3.46, so it's a very weak instrument (not called attention to
+. * when paper was first published)
+. * Labor economics, no one would consider this significant.  Same for developmen
+> t
+. * economics.  
+. 
+. // HOMEWORK: Look at the diagnostic tests and comment on them (from help file).
+. /* The diagnostic tests seek to identify whether or not the regression equation
+> is correctly identified.  That is, the independent variables are not strongly 
+> endogenous, or strongly correlated with the error term.  If these variables are
+>  
+> strongly endogenous, then it is possible the estimated coefficients will not be
+>  
+> consistent estimators and need to be corrected, here using instrumental 
+> variables.  However, we also have to check to make sure that the instrumental
+> variables are not weak, i.e. they have a strong covariance with the endogenous
+> regressors.
+> 
+> In the first stage of 2SLS, we are testing the hypothesis that the instruments
+> alone are not related to the endogenous regressor, i.e. their coefficient for 
+> explaining the regressor is 0.  The higher the t-statistic, the less likely 
+> they are weak for each indiviudal instrument.
+> The Sanderson-Windmeijer F-test is a joint measure of the excluded instruments
+> strength as a group.  Here the F-stat is a low 1.35 indicaint a risk of the 
+> instruments as a groupd being weak.  
+> The Anderson LM statistic tests whether or not the regression is 
+> underidentified, that the instruments capture the fullest prediction of the 
+> dependent variable (here our measure of institutional quality) and thus serve
+> as good instruments for stripping out the endogeneity of institutional quality.
+> The null hypotheis is that the matrix is underidentified, that the instruments
+> are relevant to explaining institutional quality.  Here the p-value of rejectin
+> g
+> the null hypothesis is 25%, leaving us not very confident that the instruments
+> in the regression here have a strong relationship to institutional quality.
+> If instruments are weak, then they arent well related to the ednogenous regress
+> or
+> and using these to strip out the endogeneity will not correct the inconsistenci
+> es
+> in the estimated coefficients of the endogenous regressor.
+> The Cragg-Donald Wald F statistic tests for weakness, and here our result is an
+> F-statistic of only 1, indicating that this equation is weakly identified.
+> Stock and Yogo provide critical F-test values based on amount of bias and sampl
+> e
+> sizes.  Here, the lowest critical value is 4.73 and 6.28 respectively (bias and
+> sample size) well above our 1.0 F-statistic indicating our instruments are weak
+> .
+> 
+> The Sargan statistic tests for overidentification, that the instruments include
+> d
+> aren't correlated with the error term and do not predict per capita gdp, and 
+> thus are correctly left out of equation 1's original regression.  
+> The null hypotheis is that we don't have overidentification and 
+> here we have a low Sargan statistic of 1.023 nad a p-value of close to .60, so
+> we wouldn't reject the null hypthesis of no overidentification here.
+> The instruments aren;t overly correlated with the error in equation 5, and 
+> they also shouldn't be included in our original regression model, equation 1
+> as they don't impact per capita gdp.
+> 
+> So, in conclusion, we don't seem to have an overidentified problem with the 
+> settler mortality instrument explaining institutional quality, but we do seem
+> to have a problem with settler mortality being a weak instrument, which may
+> impact the bias of the corrected coefficients when settler mortality is 
+> employed as an instrumental variable.
+> 
+> */
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\HW 6/leonard_exc6.log
+  log type:  text
+ closed on:   4 Dec 2017, 09:31:40
+---------------------------------------------------------------------------------

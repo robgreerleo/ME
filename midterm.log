@@ -1,0 +1,1298 @@
+--------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\midterm/leonard_mi
+> dterm.log
+  log type:  text
+ opened on:  11 Jan 2018, 10:42:17
+
+. 
+. ********************************************************
+. * Q.1 Set up dataset for Unemployment
+. * import the CSV data file and specify variable names row
+. import delimited "$datadir\unrate.csv", varnames(1)
+(2 vars, 838 obs)
+
+. * generate a Stata date from the date filed
+. gen date2=date(date,"YMD")
+
+. format date2 %td
+
+. * split out month and year components
+. gen year=year(date2)
+
+. gen month=month(date2)
+
+. *adjust date to take into account March-February calendar year
+. replace year=year+1 if month>=3
+(698 real changes made)
+
+. replace month=month-2
+(838 real changes made)
+
+. replace month=11 if month==-1
+(70 real changes made)
+
+. replace month=12 if month==0
+(70 real changes made)
+
+. * collapse to annual average unemployment rate
+. collapse (mean) unrate, by(year)
+
+. * save the data file
+. save "$workdir\unrate.dta", replace
+file C:\Users\roble\Desktop\Working\STATA\midterm\unrate.dta saved
+
+. 
+. 
+. ********************************************************
+. * Q.2 Set up dataset for GDP
+. * import the CSV data file and specify variable names row
+. import delimited "$datadir\GDPC96.csv", varnames(1) clear
+(2 vars, 282 obs)
+
+. * generate a Stata date from the date filed
+. gen date2=date(date,"YMD")
+
+. format date2 %td
+
+. * split out month and year components
+. gen year=year(date2)
+
+. gen month=month(date2)
+
+. * adjust date
+. replace year=year+1 if month!=1
+(211 real changes made)
+
+. * collaps to annual average GDP
+. collapse (mean) gdpc96, by(year)
+
+. * generate log of gdp
+. gen lgdp = log(gdpc96)
+
+. * save the data file
+. save "$workdir\gdpc96.dta", replace
+file C:\Users\roble\Desktop\Working\STATA\midterm\gdpc96.dta saved
+
+. 
+. 
+. ********************************************************
+. * Q.3
+. * import the CSV data file and specify variable names row
+. import delimited "$datadir\bds_f_ageisz_release.csv", varnames(1) 
+> clear
+(28 vars, 4,303 obs)
+
+. * Recalc the denominator 
+. gen denom_test = (emp + emp - job_creation + job_destruction)/2
+(262 missing values generated)
+
+. * Compare values
+. gen net_denom = denom - denom_test
+(262 missing values generated)
+
+. sum denom denom_test net_denom
+
+    Variable |        Obs        Mean    Std. Dev.       Min        
+> Max
+-------------+------------------------------------------------------
+> ---
+       denom |      4,078    897385.1     2282416        217   2.60e
+> +07
+  denom_test |      4,041    905305.5     2291333      216.5   2.60e
+> +07
+   net_denom |      4,041    .1999505    .3169861         -2        
+>   1
+
+. sort net_denom
+
+. br year2 emp job_creation job_destruction denom denom_test net_den
+> om
+
+. sum net_denom if abs(net_denom)>1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        
+> Max
+-------------+------------------------------------------------------
+> ---
+   net_denom |          1          -2           .         -2        
+>  -2
+
+. tab net_denom if abs(net_denom)>0
+
+  net_denom |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         -2 |          1        0.05        0.05
+         -1 |         50        2.40        2.44
+        -.5 |        161        7.71       10.16
+         .5 |      1,869       89.55       99.71
+          1 |          6        0.29      100.00
+------------+-----------------------------------
+      Total |      2,087      100.00
+
+. tab year2 if net_denom==.
+
+      year2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1977 |          4        1.53        1.53
+       1978 |          4        1.53        3.05
+       1980 |          4        1.53        4.58
+       1981 |          8        3.05        7.63
+       1982 |          7        2.67       10.31
+       1983 |          8        3.05       13.36
+       1984 |          8        3.05       16.41
+       1985 |          6        2.29       18.70
+       1986 |          6        2.29       20.99
+       1987 |          6        2.29       23.28
+       1988 |          8        3.05       26.34
+       1989 |          8        3.05       29.39
+       1990 |          8        3.05       32.44
+       1991 |          6        2.29       34.73
+       1992 |          6        2.29       37.02
+       1993 |          8        3.05       40.08
+       1994 |         10        3.82       43.89
+       1995 |         10        3.82       47.71
+       1996 |          6        2.29       50.00
+       1997 |          8        3.05       53.05
+       1998 |         11        4.20       57.25
+       1999 |          4        1.53       58.78
+       2000 |          4        1.53       60.31
+       2001 |          4        1.53       61.83
+       2002 |          7        2.67       64.50
+       2003 |          6        2.29       66.79
+       2004 |          4        1.53       68.32
+       2005 |          6        2.29       70.61
+       2006 |         10        3.82       74.43
+       2007 |          8        3.05       77.48
+       2008 |          8        3.05       80.53
+       2009 |         11        4.20       84.73
+       2010 |         10        3.82       88.55
+       2011 |          8        3.05       91.60
+       2012 |          8        3.05       94.66
+       2013 |          8        3.05       97.71
+       2014 |          6        2.29      100.00
+------------+-----------------------------------
+      Total |        262      100.00
+
+. tab denom if net_denom==.
+
+      denom |      Freq.     Percent        Cum.
+------------+-----------------------------------
+        222 |          1        2.70        2.70
+       1433 |          1        2.70        5.41
+       1570 |          1        2.70        8.11
+       5210 |          1        2.70       10.81
+       5231 |          1        2.70       13.51
+      11222 |          1        2.70       16.22
+      11316 |          1        2.70       18.92
+      12490 |          1        2.70       21.62
+      12631 |          1        2.70       24.32
+      14293 |          1        2.70       27.03
+      15291 |          1        2.70       29.73
+      15468 |          1        2.70       32.43
+      15830 |          1        2.70       35.14
+      15847 |          1        2.70       37.84
+      17553 |          1        2.70       40.54
+      18988 |          1        2.70       43.24
+      19722 |          1        2.70       45.95
+      19885 |          1        2.70       48.65
+      20556 |          1        2.70       51.35
+      23180 |          1        2.70       54.05
+      24585 |          1        2.70       56.76
+      26696 |          1        2.70       59.46
+      28950 |          1        2.70       62.16
+      30130 |          1        2.70       64.86
+      31285 |          1        2.70       67.57
+      31454 |          1        2.70       70.27
+      33521 |          1        2.70       72.97
+      35222 |          1        2.70       75.68
+      35821 |          1        2.70       78.38
+      36097 |          1        2.70       81.08
+      36211 |          1        2.70       83.78
+      66953 |          1        2.70       86.49
+      68034 |          1        2.70       89.19
+      69013 |          1        2.70       91.89
+      92058 |          1        2.70       94.59
+     123374 |          1        2.70       97.30
+     168557 |          1        2.70      100.00
+------------+-----------------------------------
+      Total |         37      100.00
+
+. tab ifsize d_flag if net_denom==. 
+
+                |   d_flag
+         ifsize |         1 |     Total
+----------------+-----------+----------
+i) 1000 to 2499 |         2 |         2 
+j) 2500 to 4999 |        33 |        33 
+k) 5000 to 9999 |       117 |       117 
+      l) 10000+ |       110 |       110 
+----------------+-----------+----------
+          Total |       262 |       262 
+
+
+. tab d_flag if denom==.
+
+     d_flag |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        225      100.00      100.00
+------------+-----------------------------------
+      Total |        225      100.00
+
+. tab ifsize d_flag if denom==.
+
+                |   d_flag
+         ifsize |         1 |     Total
+----------------+-----------+----------
+i) 1000 to 2499 |         2 |         2 
+j) 2500 to 4999 |        28 |        28 
+k) 5000 to 9999 |       102 |       102 
+      l) 10000+ |        93 |        93 
+----------------+-----------+----------
+          Total |       225 |       225 
+
+
+. tab fage4 if denom==.
+
+           fage4 |      Freq.     Percent        Cum.
+-----------------+-----------------------------------
+            a) 0 |         56       24.89       24.89
+            b) 1 |         48       21.33       46.22
+            c) 2 |         41       18.22       64.44
+            d) 3 |         32       14.22       78.67
+            e) 4 |         20        8.89       87.56
+            f) 5 |         26       11.56       99.11
+l) Left Censored |          2        0.89      100.00
+-----------------+-----------------------------------
+           Total |        225      100.00
+
+. 
+. * Recalc the job creation rate
+. gen job_creation_rate_test = 100 * (job_creation/denom) 
+(225 missing values generated)
+
+. * Compare values
+. gen net_creation_rate_test = (job_creation_rate - job_creation_rat
+> e_test)
+(225 missing values generated)
+
+. sum job_creation_rate job_creation_rate_test net_creation_rate_tes
+> t
+
+    Variable |        Obs        Mean    Std. Dev.       Min        
+> Max
+-------------+------------------------------------------------------
+> ---
+job_creati~e |      4,078    32.99441    52.32842          0        
+> 200
+job_creati~t |      4,078    32.99564    52.32843          0        
+> 200
+net_creati~t |      4,078   -.0012348    .0286224  -.0499916   .0499
+> 992
+
+. sort net_creation_rate_test
+
+. br year2 denom job_creation_rate job_creation_rate_test net_creati
+> on_rate_test
+
+. 
+. * Recalc the job creation rate, but add rounding to tenths
+. replace job_creation_rate_test = round(100 * (job_creation/denom),
+> .1) 
+(4,030 real changes made)
+
+. * Compare values
+. replace net_creation_rate_test = (job_creation_rate - job_creation
+> _rate_test)
+(4,030 real changes made)
+
+. sum job_creation_rate job_creation_rate_test net_creation_rate_tes
+> t
+
+    Variable |        Obs        Mean    Std. Dev.       Min        
+> Max
+-------------+------------------------------------------------------
+> ---
+job_creati~e |      4,078    32.99441    52.32842          0        
+> 200
+job_creati~t |      4,078    32.99441    52.32842          0        
+> 200
+net_creati~t |      4,078           0           0          0        
+>   0
+
+. sort net_creation_rate_test
+
+. br year2 denom job_creation_rate job_creation_rate_test net_creati
+> on_rate_test
+
+. tab d_flag if job_creation_rate==.
+
+     d_flag |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        225      100.00      100.00
+------------+-----------------------------------
+      Total |        225      100.00
+
+. 
+. 
+. ********************************************************
+. * Q.4 Generate age and size Variables
+. * Age is defined by a string variable, fage4
+. sort year2 fage4 ifsize
+
+. codebook fage4
+
+--------------------------------------------------------------------
+fage4                                                    (unlabeled)
+--------------------------------------------------------------------
+
+                  type:  string (str16)
+
+         unique values:  12                       missing "":  0/4,3
+> 03
+
+              examples:  "b) 1"
+                         "d) 3"
+                         "g) 6 to 10"
+                         "i) 16 to 20"
+
+               warning:  variable has embedded blanks
+
+. tab fage4
+
+           fage4 |      Freq.     Percent        Cum.
+-----------------+-----------------------------------
+            a) 0 |        427        9.92        9.92
+            b) 1 |        444       10.32       20.24
+            c) 2 |        432       10.04       30.28
+            d) 3 |        420        9.76       40.04
+            e) 4 |        408        9.48       49.52
+            f) 5 |        396        9.20       58.73
+      g) 6 to 10 |        384        8.92       67.65
+     h) 11 to 15 |        324        7.53       75.18
+     i) 16 to 20 |        264        6.14       81.32
+     j) 21 to 25 |        204        4.74       86.06
+          k) 26+ |        144        3.35       89.40
+l) Left Censored |        456       10.60      100.00
+-----------------+-----------------------------------
+           Total |      4,303      100.00
+
+. gen fage4_code = substr(fage4,1,1)
+
+. tab fage4_code
+
+ fage4_code |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          a |        427        9.92        9.92
+          b |        444       10.32       20.24
+          c |        432       10.04       30.28
+          d |        420        9.76       40.04
+          e |        408        9.48       49.52
+          f |        396        9.20       58.73
+          g |        384        8.92       67.65
+          h |        324        7.53       75.18
+          i |        264        6.14       81.32
+          j |        204        4.74       86.06
+          k |        144        3.35       89.40
+          l |        456       10.60      100.00
+------------+-----------------------------------
+      Total |      4,303      100.00
+
+. * Set all firms labeled a-f as young (or 1)
+. * note, from 1977 until 1981 we have a problem with those firms la
+> bled
+. * as "left censored" (established before 1977).  By 1982 all of th
+> ese firms
+. * would be labled as mature firms, but for 1977 through 1981 we ca
+> nnot determine
+. * if these firms are young or mature.  So for now, they have been 
+> left blank
+. * in terms of the variable age, for those years.
+. gen float age = 1 if fage4_code=="a" | fage4_code=="b"  | fage4_co
+> de=="c" ///
+>   | fage4_code=="d"  | fage4_code=="e" | fage4_code=="f"
+(1,776 missing values generated)
+
+. * Set age code to 0 for mature firms, leaving out those left censo
+> red from above
+. replace age = 0 if fage4_code=="g" | fage4_code=="h" | /// 
+>   fage4_code=="i" | fage4_code=="j" | fage4_code=="k"     
+(1,320 real changes made)
+
+. replace age = 0 if fage4_code=="l" & year2>=1982   
+(396 real changes made)
+
+. tab year2 fage4 if age==.
+
+           |   fage4
+     year2 | l) Left.. |     Total
+-----------+-----------+----------
+      1977 |        12 |        12 
+      1978 |        12 |        12 
+      1979 |        12 |        12 
+      1980 |        12 |        12 
+      1981 |        12 |        12 
+-----------+-----------+----------
+     Total |        60 |        60 
+
+
+. * Drop the "left censored" data from 1977 to 1981 because we canno
+> t classify
+. * it as young or mature.  Also, we will be dropping all years prio
+> r to 1982 
+. * later on anyhow.
+. drop if age==.
+(60 observations deleted)
+
+. tab age fage4_code 
+
+           |                 fage4_code
+       age |         a          b          c          d |     Total
+-----------+--------------------------------------------+----------
+         0 |         0          0          0          0 |     1,716 
+         1 |       427        444        432        420 |     2,527 
+-----------+--------------------------------------------+----------
+     Total |       427        444        432        420 |     4,243 
+
+
+           |                 fage4_code
+       age |         e          f          g          h |     Total
+-----------+--------------------------------------------+----------
+         0 |         0          0        384        324 |     1,716 
+         1 |       408        396          0          0 |     2,527 
+-----------+--------------------------------------------+----------
+     Total |       408        396        384        324 |     4,243 
+
+
+           |                 fage4_code
+       age |         i          j          k          l |     Total
+-----------+--------------------------------------------+----------
+         0 |       264        204        144        396 |     1,716 
+         1 |         0          0          0          0 |     2,527 
+-----------+--------------------------------------------+----------
+     Total |       264        204        144        396 |     4,243 
+
+
+.  
+. * Set firm size  
+. codebook ifsize
+
+--------------------------------------------------------------------
+ifsize                                                   (unlabeled)
+--------------------------------------------------------------------
+
+                  type:  string (str15)
+
+         unique values:  12                       missing "":  0/4,2
+> 43
+
+              examples:  "c) 10 to 19"
+                         "e) 50 to 99"
+                         "h) 500 to 999"
+                         "j) 2500 to 4999"
+
+               warning:  variable has embedded blanks
+
+. tab ifsize
+
+         ifsize |      Freq.     Percent        Cum.
+----------------+-----------------------------------
+      a) 1 to 4 |        356        8.39        8.39
+      b) 5 to 9 |        356        8.39       16.78
+    c) 10 to 19 |        356        8.39       25.17
+    d) 20 to 49 |        356        8.39       33.56
+    e) 50 to 99 |        356        8.39       41.95
+  f) 100 to 249 |        356        8.39       50.34
+  g) 250 to 499 |        356        8.39       58.73
+  h) 500 to 999 |        356        8.39       67.12
+i) 1000 to 2499 |        356        8.39       75.51
+j) 2500 to 4999 |        355        8.37       83.88
+k) 5000 to 9999 |        347        8.18       92.06
+      l) 10000+ |        337        7.94      100.00
+----------------+-----------------------------------
+          Total |      4,243      100.00
+
+. gen ifsize_code = substr(ifsize,1,1)
+
+. tab ifsize_code 
+
+ifsize_code |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          a |        356        8.39        8.39
+          b |        356        8.39       16.78
+          c |        356        8.39       25.17
+          d |        356        8.39       33.56
+          e |        356        8.39       41.95
+          f |        356        8.39       50.34
+          g |        356        8.39       58.73
+          h |        356        8.39       67.12
+          i |        356        8.39       75.51
+          j |        355        8.37       83.88
+          k |        347        8.18       92.06
+          l |        337        7.94      100.00
+------------+-----------------------------------
+      Total |      4,243      100.00
+
+. * now assign size
+. gen float size = 0 if ifsize_code=="a" |ifsize_code=="b" | ifsize_
+> code=="c" | ///
+>  ifsize_code=="d" 
+(2,819 missing values generated)
+
+. replace size = 1 if ifsize_code=="e" |ifsize_code=="f" | ifsize_co
+> de=="g" | ///
+>  ifsize_code=="h" 
+(1,424 real changes made)
+
+. replace size = 2 if ifsize_code=="i" |ifsize_code=="j" | ifsize_co
+> de=="k" | ///
+>  ifsize_code=="l" 
+(1,395 real changes made)
+
+. tab size ifsize_code
+
+           |                 ifsize_code
+      size |         a          b          c          d |     Total
+-----------+--------------------------------------------+----------
+         0 |       356        356        356        356 |     1,424 
+         1 |         0          0          0          0 |     1,424 
+         2 |         0          0          0          0 |     1,395 
+-----------+--------------------------------------------+----------
+     Total |       356        356        356        356 |     4,243 
+
+
+           |                 ifsize_code
+      size |         e          f          g          h |     Total
+-----------+--------------------------------------------+----------
+         0 |         0          0          0          0 |     1,424 
+         1 |       356        356        356        356 |     1,424 
+         2 |         0          0          0          0 |     1,395 
+-----------+--------------------------------------------+----------
+     Total |       356        356        356        356 |     4,243 
+
+
+           |                 ifsize_code
+      size |         i          j          k          l |     Total
+-----------+--------------------------------------------+----------
+         0 |         0          0          0          0 |     1,424 
+         1 |         0          0          0          0 |     1,424 
+         2 |       356        355        347        337 |     1,395 
+-----------+--------------------------------------------+----------
+     Total |       356        355        347        337 |     4,243 
+
+
+. 
+. * Reclasify firms with 0 age to being small firms 
+. replace size = 0 if fage4_code=="a"  
+(275 real changes made)
+
+. * drop all young and large firms
+. drop if age==1 & size==2
+(700 observations deleted)
+
+. 
+. * set up labels
+. label define firmage 0 "mature" 1 "young"
+
+. label values age firmage
+
+. label define firmsize 0 "small" 1 "medium" 2 "large"
+
+. label values size firmsize
+
+. lab var age "0=mature, 1=young" 
+
+. lab var size "0=small, 1=medium, 2=large"
+
+. tab age size
+
+ 0=mature, |    0=small, 1=medium, 2=large
+   1=young |     small     medium      large |     Total
+-----------+---------------------------------+----------
+    mature |       572        572        572 |     1,716 
+     young |     1,127        700          0 |     1,827 
+-----------+---------------------------------+----------
+     Total |     1,699      1,272        572 |     3,543 
+
+
+. 
+. 
+. ********************************************************
+. * Q.5 Collapse and Rename
+. * Collapse to get sums 
+. collapse (sum) denom job_creation job_destruction, by(age size yea
+> r2) 
+
+. *Rename variables 
+. rename job_creation jc  
+
+. rename job_destruction jd 
+
+. rename year2 year 
+
+.  
+.  
+. ********************************************************
+. * Q.6 Reshape the dataset
+. 
+. ssc install sdecode
+checking sdecode consistency and verifying not already installed...
+all files already exist and are up to date.
+
+. 
+. sdecode age, replace
+
+. sdecode size, replace
+
+. 
+. gen agesize = age + size
+
+. 
+. drop age size
+
+. * Reshape, but keep year as we will be merging in yearly unemploym
+> ent
+. * and GDP data
+. reshape wide denom jc jd, i(year) j(agesize) string
+(note: j = maturelarge maturemedium maturesmall youngmedium youngsma
+> ll)
+
+Data                               long   ->   wide
+--------------------------------------------------------------------
+> ---------
+Number of obs.                      174   ->      38
+Number of variables                   5   ->      16
+j variable (5 values)           agesize   ->   (dropped)
+xij variables:
+                                  denom   ->   denommaturelarge deno
+> mmaturemedium ... denomyoungsmall
+                                     jc   ->   jcmaturelarge jcmatur
+> emedium ... jcyoungsmall
+                                     jd   ->   jdmaturelarge jdmatur
+> emedium ... jdyoungsmall
+--------------------------------------------------------------------
+> ---------
+
+.  
+.  
+. ********************************************************
+. * Q.7 Generate Subgroups 
+. 
+. * for each year calc denom jc jd for the 5 different subgroups
+. set type double
+
+. global age "young mature"
+
+. global size "small medium large"
+
+. * loops to generate variable names for new aggregated age and size
+>  categories
+. foreach k of global age {
+  2.  gen denom`k' = 0
+  3.  lab var denom`k' "`k' denom"
+  4.  format denom`k' %12.0g
+  5.  gen jc`k' = 0
+  6.  lab var jc`k' "`k' jc"
+  7.  format jc`k'  %12.0g
+  8.  gen jd`k'  = 0
+  9.  lab var jd`k' "`k' jd"
+ 10.  format jd`k' %12.0g
+ 11.  }
+
+. foreach j of global size {
+  2.  gen denom`j' = 0
+  3.  lab var denom`j' "`j' denom"
+  4.  format denom`j' %12.0g
+  5.  gen jc`j'  = 0
+  6.  lab var jc`j' "`j' jc"
+  7.  format jc`j'  %12.0g
+  8.  gen jd`j'  = 0
+  9.  lab var jd`j' "`j' jd"
+ 10.  format jd`j'  %12.0g
+ 11. }
+
+. * need a placeholder value for young and large since we dropped th
+> ese previously
+. gen denomyounglarge = 0
+
+. gen jcyounglarge = 0
+
+. gen jdyounglarge = 0
+
+. 
+. * now generate aggregated variable values using a nested loop  
+. foreach k of global age {
+  2. display "`k'"
+  3.  foreach j of global size {
+  4.    display "`j'"
+  5.    * aggregate on size
+.    replace denom`j' = denom`j' + denom`k'`j'
+  6.    replace jc`j' = jc`j' + jc`k'`j'
+  7.    replace jd`j' = jd`j' + jd`k'`j'
+  8.    * aggregate for age
+.    replace denom`k' = denom`k' + denom`k'`j'
+  9.    replace jc`k' = jc`k' + jc`k'`j'
+ 10.    replace jd`k' = jd`k' + jd`k'`j'
+ 11.    }
+ 12. }
+young
+small
+(38 real changes made)
+(38 real changes made)
+(37 real changes made)
+(38 real changes made)
+(38 real changes made)
+(37 real changes made)
+medium
+(38 real changes made, 1 to missing)
+(38 real changes made, 1 to missing)
+(38 real changes made, 1 to missing)
+(38 real changes made, 1 to missing)
+(38 real changes made, 1 to missing)
+(38 real changes made, 1 to missing)
+large
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+mature
+small
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+medium
+(37 real changes made, 4 to missing)
+(37 real changes made, 4 to missing)
+(37 real changes made, 4 to missing)
+(33 real changes made)
+(33 real changes made)
+(33 real changes made)
+large
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+(38 real changes made, 5 to missing)
+(33 real changes made)
+(33 real changes made)
+(33 real changes made)
+
+.  
+. * check totals to make sure summation operations are correct
+. tabstat denom*, stat(sum) format(%12.0g) columns(statistics) varwi
+> dth(24)
+
+                variable |       sum
+-------------------------+----------
+        denommaturelarge |  1407621470
+       denommaturemedium |   765295880
+        denommaturesmall |   677654040
+        denomyoungmedium |   124980786
+         denomyoungsmall |   362422121
+              denomyoung |   485556941
+             denommature |  2850571390
+              denomsmall |  1012059057
+             denommedium |   882802755
+              denomlarge |  1407621470
+         denomyounglarge |           0
+------------------------------------
+
+. tabstat jc*, stat(sum) format(%12.0g) columns(statistics) varwidth
+> (24)
+
+                variable |       sum
+-------------------------+----------
+           jcmaturelarge |   174774888
+          jcmaturemedium |    91831592
+           jcmaturesmall |    86661089
+           jcyoungmedium |    23296460
+            jcyoungsmall |   177530236
+                 jcyoung |   197245421
+                jcmature |   353267569
+                 jcsmall |   244518388
+                jcmedium |   113623008
+                 jclarge |   174774888
+            jcyounglarge |           0
+------------------------------------
+
+. tabstat jd*, stat(sum) format(%12.0g) columns(statistics) varwidth
+> (24)
+
+                variable |       sum
+-------------------------+----------
+           jdmaturelarge |   173653483
+          jdmaturemedium |   101257005
+           jdmaturesmall |   101989932
+           jdyoungmedium |    32558833
+            jdyoungsmall |    76652177
+                 jdyoung |   109211010
+                jdmature |   376900420
+                 jdsmall |   172604460
+                jdmedium |   131672358
+                 jdlarge |   173653483
+            jdyounglarge |           0
+------------------------------------
+
+. * missing values are from years 1977 to 1981, which are later dele
+> ted anyhow,
+. * so ignore these discrepancies.  now check variable labels and fo
+> rmatting
+. describe denom*
+
+              storage   display    value
+variable name   type    format     label      variable label
+--------------------------------------------------------------------
+denommaturela~e double  %12.0g                maturelarge denom
+denommatureme~m double  %12.0g                maturemedium denom
+denommaturesm~l double  %12.0g                maturesmall denom
+denomyoungmed~m double  %12.0g                youngmedium denom
+denomyoungsmall double  %12.0g                youngsmall denom
+denomyoung      double  %12.0g                young denom
+denommature     double  %12.0g                mature denom
+denomsmall      double  %12.0g                small denom
+denommedium     double  %12.0g                medium denom
+denomlarge      double  %12.0g                large denom
+denomyounglarge double  %10.0g                
+
+. describe jc*
+
+              storage   display    value
+variable name   type    format     label      variable label
+--------------------------------------------------------------------
+jcmaturelarge   double  %12.0g                maturelarge jc
+jcmaturemedium  double  %12.0g                maturemedium jc
+jcmaturesmall   double  %12.0g                maturesmall jc
+jcyoungmedium   double  %12.0g                youngmedium jc
+jcyoungsmall    double  %12.0g                youngsmall jc
+jcyoung         double  %12.0g                young jc
+jcmature        double  %12.0g                mature jc
+jcsmall         double  %12.0g                small jc
+jcmedium        double  %12.0g                medium jc
+jclarge         double  %12.0g                large jc
+jcyounglarge    double  %10.0g                
+
+. describe jd*
+
+              storage   display    value
+variable name   type    format     label      variable label
+--------------------------------------------------------------------
+jdmaturelarge   double  %12.0g                maturelarge jd
+jdmaturemedium  double  %12.0g                maturemedium jd
+jdmaturesmall   double  %12.0g                maturesmall jd
+jdyoungmedium   double  %12.0g                youngmedium jd
+jdyoungsmall    double  %12.0g                youngsmall jd
+jdyoung         double  %12.0g                young jd
+jdmature        double  %12.0g                mature jd
+jdsmall         double  %12.0g                small jd
+jdmedium        double  %12.0g                medium jd
+jdlarge         double  %12.0g                large jd
+jdyounglarge    double  %10.0g                
+
+.  
+.  
+. ********************************************************
+. * Q.8 Generate net job creation rates
+. 
+. * define net job creation variable and calculate them
+. foreach k of global age {
+  2. display "`k'"
+  3. gen njcr`k' = ((jc`k'/denom`k')-(jd`k'/denom`k'))
+  4. lab var njcr`k' "njcr `k'"
+  5. format njcr`k' %7.6g
+  6.  foreach j of global size {
+  7.  * generate combination variables
+.       display "`k'`j'"  
+  8.       gen njcr`k'`j' = ((jc`k'`j'/denom`k'`j')-(jd`k'`j'/denom`
+> k'`j'))
+  9.       lab var njcr`k'`j' "njcr `k'`j'"
+ 10.       format njcr`k'`j' %7.6g
+ 11.     }
+ 12. }
+young
+(1 missing value generated)
+youngsmall
+youngmedium
+(1 missing value generated)
+younglarge
+(38 missing values generated)
+mature
+(5 missing values generated)
+maturesmall
+(5 missing values generated)
+maturemedium
+(5 missing values generated)
+maturelarge
+(5 missing values generated)
+
+. 
+.  foreach j of global size {
+  2.   display "`j'"
+  3.    gen njcr`j' = ((jc`j'/denom`j')-(jd`j'/denom`j'))
+  4.    lab var njcr`j' "njcr `j'"
+  5.    format njcr`j' %7.6g
+  6.  }
+small
+(5 missing values generated)
+medium
+(5 missing values generated)
+large
+(5 missing values generated)
+
+.  
+. describe njcr*
+
+              storage   display    value
+variable name   type    format     label      variable label
+--------------------------------------------------------------------
+njcryoung       double  %7.6g                 njcr young
+njcryoungsmall  double  %7.6g                 njcr youngsmall
+njcryoungmedium double  %7.6g                 njcr youngmedium
+njcryounglarge  double  %7.6g                 njcr younglarge
+njcrmature      double  %7.6g                 njcr mature
+njcrmaturesmall double  %7.6g                 njcr maturesmall
+njcrmaturemed~m double  %7.6g                 njcr maturemedium
+njcrmaturelarge double  %7.6g                 njcr maturelarge
+njcrsmall       double  %7.6g                 njcr small
+njcrmedium      double  %7.6g                 njcr medium
+njcrlarge       double  %7.6g                 njcr large
+
+.  
+.  
+. ********************************************************
+. * Q.9 Merge unemployment and GDP
+. 
+. * merge unemployment
+. merge 1:1 year using "$workdir/unrate.dta"
+(note: variable year was int, now float to accommodate using
+       data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                            33
+        from master                         0  (_merge==1)
+        from using                         33  (_merge==2)
+
+    matched                                38  (_merge==3)
+    -----------------------------------------
+
+. * merge GDP
+. merge 1:1 year using "$workdir/gdpc96.dta", generate(_merge2)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge2==1)
+        from using                          1  (_merge2==2)
+
+    matched                                71  (_merge2==3)
+    -----------------------------------------
+
+. * define the data as a yearly time series
+. tsset year, yearly
+        time variable:  year, 1947 to 2018
+                delta:  1 year
+
+. * first difference unemployment
+. gen fdunrate = unrate - l.unrate
+(2 missing values generated)
+
+. label var fdunrate "first differ. unem. rate"
+
+. * first difference log GDP
+. gen fdlgdp = lgdp - l.lgdp
+(1 missing value generated)
+
+. label var fdlgdp "first differ. log GDP"
+
+. * Drop years before 1982 and after 2014
+. drop if year < 1982 | year > 2014
+(39 observations deleted)
+
+.  
+.  
+. ********************************************************
+. * Q.10 Generate Cyclical Deviations of NJCR
+. 
+. * create njcryounglarge placeholder for loop then drop later
+. replace njcryounglarge = 0
+(33 real changes made)
+
+. 
+. foreach k of global age {
+  2. tsfilter hp cycnjcr`k' = njcr`k', smooth(390.625) 
+  3.  foreach j of global size {
+  4.     * generate combination variables  
+.     tsfilter hp cycnjcr`k'`j' = njcr`k'`j', smooth(390.625) 
+  5.     }
+  6. }
+
+. 
+.  foreach j of global size {
+  2. tsfilter hp cycnjcr`j' = njcr`j', smooth(390.625)   
+  3.  }
+
+.  
+.  
+. ********************************************************
+. * Q.11 Calculate differential job creation rates
+. 
+. * 1) Between small and large
+. gen njcr_sl = cycnjcrsmall - cycnjcrlarge 
+
+. label var njcr_sl "Diff. of cyc. btw. small & large" 
+
+. * 2) Between young and mature
+. gen njcr_ym = cycnjcryoung - cycnjcrmature
+
+. label var njcr_ym "Diff. of cyc. btw. young & mature" 
+
+. * 3) Between small and large for mature firms
+. gen njcr_msml = cycnjcrmaturesmall - cycnjcrmaturelarge
+
+. label var njcr_msml "Diff. of cyc. btw. mature small & large" 
+
+. * 4) Between young and mature for small firms
+. gen njcr_ysms = cycnjcryoungsmall - cycnjcrmaturesmall
+
+. label var njcr_ysms "Diff. of cyc. btw. small young & mature" 
+
+.  
+.  
+. ********************************************************
+. * Q.12 Plot
+. 
+. * Plot 1 - Cycl. unem. rate and differential for small and large
+. * First determine min/max for determining axis specifications
+. sum fdunrate njcr_sl
+
+    Variable |        Obs        Mean    Std. Dev.       Min        
+> Max
+-------------+------------------------------------------------------
+> ---
+    fdunrate |         33   -.0060606    .9885329  -1.783333   3.258
+> 333
+     njcr_sl |         33    4.21e-19    .0144988   -.033579   .0358
+> 577
+
+. /* Matching the graph style exactly was a little complicated - the
+>  shaded
+> regions for NBER recessions are, I think, based on 2 consecutive q
+> uarters of
+> negative GDP "growth", but we only have yearly data in our revised
+>  dataset.
+> Getting the recession highlights to look the same and match the qu
+> arterly data
+> would require reverting to quarterly time series data.  Instead, I
+>  have 
+> visually approximated the recession highlighting to match the quar
+> terly periods 
+> using xlines.  I had trouble getting the xline color bar to show i
+> n the legend
+> so I have added a third graph called recshade with essentially 0 a
+> rea.  This
+> allows the grey bar to now show up in the legend for the areas of 
+> NBER 
+> recessions, which correspond to the xlines.  I later drop the recs
+> hade data as 
+> it is not relevant.
+> 
+> Second, the yline at the origin get covered by the xline recession
+>  highlighting.
+> So I have moved the yline to axis 2 for to better match the look o
+> f the graph.
+> I approximated the correct intercept point on axis 2 to match the 
+> origin of
+> axis 1. */
+. gen recshade = 0
+
+. * calculate the correlation and store in a local macro
+. corr fdunrate njcr_sl
+(obs=33)
+
+             | fdunrate  njcr_sl
+-------------+------------------
+    fdunrate |   1.0000
+     njcr_sl |  -0.0884   1.0000
+
+
+. local corrco = r(rho)
+
+. twoway(line fdunrate year, yaxis(1) color(blue) fcolor(none) ///
+>      yscale(range(-.04 .04))) ///
+>  (line njcr_sl year, yaxis(2) color(red) fcolor(none)) ///
+>  (area recshade year, bcolor(gs13)), ///  
+>   yscale(range(-2 3)) xscale(range(1982 2014)) xlabel(1982(3)2015,
+>  grid) ///
+>   ylabel(-2(1)3) title("{bf:Cyclical Measures}") ///
+> legend(label(1 "unemployment rate (left axis)") ///
+> label(3 "diff. small-large (right axis)")  ///
+> label(2 "NBER recession") ///
+> label(4 "Corr: `: di %3.2f `corrco''") ///
+>  order(2 1 3 4) region(lwidth(0) lcolor(none))) ///
+>  scheme(s1color)  ///
+> xtitle("") ytitle("") ytitle("",axis(2)) ///
+>  xline(1982.2, lwidth(4.5) lcolor(gs13) noextend) ///
+>  xline(1990.7, lwidth(2) lcolor(gs13) noextend) ///
+>  xline(2001.5, lwidth(3) lcolor(gs13) noextend) ///
+>  xline(2008.5, lwidth(6) lcolor(gs13) noextend) ///
+>  yline(-.0096, axis(2) lcolor(black) noextend)  
+
+. 
+. graph export "$workdir/Graph1.pdf", replace
+(file C:\Users\roble\Desktop\Working\STATA\midterm/Graph1.pdf writte
+> n in PDF format)
+
+. 
+. * Plot 2 - Cycl. unem. rate and differential for young and mature
+. 
+. sum fdunrate njcr_ym
+
+    Variable |        Obs        Mean    Std. Dev.       Min        
+> Max
+-------------+------------------------------------------------------
+> ---
+    fdunrate |         33   -.0060606    .9885329  -1.783333   3.258
+> 333
+     njcr_ym |         33   -4.99e-19     .021776   -.056367   .0291
+> 744
+
+. 
+. corr fdunrate njcr_ym
+(obs=33)
+
+             | fdunrate  njcr_ym
+-------------+------------------
+    fdunrate |   1.0000
+     njcr_ym |  -0.4739   1.0000
+
+
+. local corrco = r(rho)
+
+. 
+. twoway(line fdunrate year, yaxis(1) color(blue) fcolor(none) ///
+>      yscale(range(-.04 .04))) ///
+>  (line njcr_ym year, yaxis(2) color(red) fcolor(none)) ///
+>  (area recshade year, bcolor(gs13)), ///  
+>   yscale(range(-2 3)) xscale(range(1982 2014)) xlabel(1982(3)2015,
+>  grid) ///
+>   ylabel(-2(1)3) title("{bf:Cyclical Measures}") ///
+> legend(label(1 "unemployment rate (left axis)") ///
+> label(3 "diff. young-mature (right axis)")  ///
+> label(2 "NBER recession") ///
+> label(4 "Corr: `: di %3.2f `corrco''") ///
+>  order(2 1 3 4) region(lwidth(0) lcolor(none))) ///
+>  scheme(s1color)  ///
+> xtitle("") ytitle("") ytitle("",axis(2)) ///
+>  xline(1982.2, lwidth(4.5) lcolor(gs13) noextend) ///
+>  xline(1990.7, lwidth(2) lcolor(gs13) noextend) ///
+>  xline(2001.5, lwidth(3) lcolor(gs13) noextend) ///
+>  xline(2008.5, lwidth(6) lcolor(gs13) noextend) ///
+>  yline(-.022, axis(2) lcolor(black) noextend)  
+
+. 
+. graph export "$workdir/Graph2.pdf", replace
+(file C:\Users\roble\Desktop\Working\STATA\midterm/Graph2.pdf writte
+> n in PDF format)
+
+.  
+.  
+. ********************************************************
+. * Q.13 Correlations and Significance
+. 
+. pwcorr fdunrate fdlgdp njcr_sl, sig
+
+             | fdunrate   fdlgdp  njcr_sl
+-------------+---------------------------
+    fdunrate |   1.0000 
+             |
+             |
+      fdlgdp |  -0.8123   1.0000 
+             |   0.0000
+             |
+     njcr_sl |  -0.0884   0.1576   1.0000 
+             |   0.6248   0.3812
+             |
+
+. pwcorr fdunrate fdlgdp njcr_ym, sig
+
+             | fdunrate   fdlgdp  njcr_ym
+-------------+---------------------------
+    fdunrate |   1.0000 
+             |
+             |
+      fdlgdp |  -0.8123   1.0000 
+             |   0.0000
+             |
+     njcr_ym |  -0.4739   0.5041   1.0000 
+             |   0.0053   0.0028
+             |
+
+. pwcorr fdunrate fdlgdp njcr_msml, sig
+
+             | fdunrate   fdlgdp njcr_m~l
+-------------+---------------------------
+    fdunrate |   1.0000 
+             |
+             |
+      fdlgdp |  -0.8123   1.0000 
+             |   0.0000
+             |
+   njcr_msml |   0.2504  -0.1654   1.0000 
+             |   0.1598   0.3577
+             |
+
+. pwcorr fdunrate fdlgdp njcr_ysms, sig
+
+             | fdunrate   fdlgdp njcr_y~s
+-------------+---------------------------
+    fdunrate |   1.0000 
+             |
+             |
+      fdlgdp |  -0.8123   1.0000 
+             |   0.0000
+             |
+   njcr_ysms |  -0.5762   0.5714   1.0000 
+             |   0.0004   0.0005
+             |
+
+.  
+. ********************************************************
+. * Q.14 Save data
+. * drop the younglarge placeholders, merge codes, unneeded data
+. drop denomyounglarge
+
+. drop jcyounglarge
+
+. drop jdyounglarge
+
+. drop njcryounglarge
+
+. drop _merge
+
+. drop _merge2
+
+. drop recshade
+
+. drop cycnjcryounglarge
+
+. 
+. *sort the data
+. sort year
+
+. 
+. * save data
+. save "$workdir\midterm.dta", replace
+file C:\Users\roble\Desktop\Working\STATA\midterm\midterm.dta saved
+
+.  
+. * close the log file 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\roble\Desktop\Working\STATA\midterm/leonard_mi
+> dterm.log
+  log type:  text
+ closed on:  11 Jan 2018, 10:42:28
+--------------------------------------------------------------------
